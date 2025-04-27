@@ -130,7 +130,7 @@ codex-cli/
 
 ## 👨‍💻 Credits
 
-Developed and customized by [Ravi Kuruganthy](https://github.com/rkkuruganthy) 🚀\
+Developed and customized by [@Ravi](https://github.com/rkkuruganthy) 🚀\
 Guided by OpenAI Codex and LMStudio open ecosystems.
 
 ---
