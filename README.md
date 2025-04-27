@@ -135,6 +135,6 @@ Guided by OpenAI Codex and LMStudio open ecosystems.
 
 ---
 
-This is created as Code Assistant to support multiple languages and most importantly to run 100% local
+A Coding Assistant to support multiple languages and most importantly to run 100% local
 
  
