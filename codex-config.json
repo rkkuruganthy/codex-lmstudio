@@ -1,0 +1,12 @@
+{
+    "default_model": "qwen2.5-coder-14b-instruct",
+    "default_program_context": "",
+    "default_git_repo": "",
+    "shortcut_command": "CodeAssist",
+    "temperature": 0.2,
+    "top_p": 1,
+    "max_tokens": 10000,
+    "auto_save_sessions": true,
+    "auto_detect_models": true
+  }
+  

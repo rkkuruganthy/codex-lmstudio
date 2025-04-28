@@ -1,118 +1,135 @@
 // Location: src/components/codex-chat.tsx
 
-import React, { useEffect, useState } from "react";
-import { Box, Text, useApp, useInput } from "ink";
+import React, { useState, useEffect } from "react";
+import { Box, Text } from "ink";
 import TextInput from "ink-text-input";
 import Spinner from "ink-spinner";
-import { createSession, Session } from "../utils/session.js";
+import fetch from "node-fetch";
+
+const predefinedPrompts = [
+  "Generate unit tests",
+  "Review my code",
+  "Optimize this algorithm",
+  "Suggest improvements",
+  "Explain this code",
+  "Write documentation",
+  "Find security vulnerabilities",
+  "Summarize the code",
+];
 
 interface CodexChatProps {
+  initialPrompt: string;
   model: string;
-  initialPrompt?: string;
 }
 
-export const CodexChat: React.FC<CodexChatProps> = ({ model, initialPrompt }) => {
-  const { exit } = useApp();
-  const [input, setInput] = useState("");
-  const [session] = useState<Session>(() => createSession({ model }));
-  const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
+export const CodexChat: React.FC<CodexChatProps> = ({ initialPrompt, model }) => {
+  const [input, setInput] = useState(initialPrompt || "");
+  const [response, setResponse] = useState<string>("");
   const [thinking, setThinking] = useState(false);
-  const [pendingQueue, setPendingQueue] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [tokensUsed, setTokensUsed] = useState<number | null>(null);
+  const [timeTaken, setTimeTaken] = useState<number | null>(null);
 
-  // Handle LMStudio response fetching in background
-  useEffect(() => {
-    if (pendingQueue.length > 0 && !thinking) {
-      const nextPrompt = pendingQueue[0];
-      const run = async () => {
-        try {
-          setThinking(true);
-          const assistantReply = await session.send(nextPrompt);
-          setMessages(prev => [
-            ...prev,
-            { role: "user", content: nextPrompt },
-            { role: "assistant", content: assistantReply }
-          ]);
-        } catch (err: any) {
-          console.error("🚨 Error during fetch:", err);
-          setError(err.message || "Unknown error occurred.");
-        } finally {
-          setThinking(false);
-          setPendingQueue(prev => prev.slice(1));
-        }
-      };
-      run();
-    }
-  }, [pendingQueue, thinking, session]);
+  const handleSubmit = async (value: string) => {
+    if (!value.trim()) return;
 
-  // On initial load, send the initial prompt if provided
-  useEffect(() => {
-    if (initialPrompt) {
-      setPendingQueue(prev => [...prev, initialPrompt]);
+    if (value.trim() === "/clear") {
+      setResponse("");
+      setInput("");
+      setTokensUsed(null);
+      setTimeTaken(null);
+      return;
     }
-  }, [initialPrompt]);
 
-  useInput((inputKey, key) => {
-    if (key.return) {
-      if (!thinking && input.trim()) {
-        setPendingQueue(prev => [...prev, input.trim()]);
-        setInput("");
-      }
-    } else if (key.ctrl && inputKey === "c") {
-      exit();
+    setThinking(true);
+    const start = Date.now();
+    const apiUrl = process.env.OPENAI_API_BASE_URL || "http://localhost:1234/v1";
+    const apiKey = process.env.LMSTUDIO_API_KEY || "sk-local";
+
+    try {
+      const res = await fetch(`${apiUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: "system", content: "You are a helpful coding assistant." },
+            { role: "user", content: value }
+          ],
+          temperature: 0.2,
+          stream: false,
+        }),
+      });
+
+      const data = await res.json();
+      const assistantMessage = data.choices?.[0]?.message?.content || "No response.";
+      const tokens = data.usage?.total_tokens || null;
+      const end = Date.now();
+
+      setResponse(assistantMessage);
+      setTokensUsed(tokens);
+      setTimeTaken(Math.round((end - start) / 1000));
+    } catch (error) {
+      console.error("🚨 Error:", error);
+    } finally {
+      setThinking(false);
+      setInput("");
     }
-  });
+  };
 
   return (
-    <Box flexDirection="column" padding={1}>
-      {/* Session ID */}
-      <Box marginBottom={1}>
-        <Text color="cyan">Session ID: {session.id}</Text>
+    <Box flexDirection="column" padding={1} width="100%">
+      
+      {/* 🧠 Heading Section */}
+      <Box marginBottom={1} flexDirection="column" borderStyle="round" borderColor="cyan" width="80%" alignSelf="center">
+        <Text color="cyanBright">🚀 CodeAssist CLI (by Ravi)</Text>
+        <Text color="green">Built with ❤️ LMStudio + Qwen2.5</Text>
       </Box>
 
-      {/* Chat history */}
-      {messages.map((msg, idx) => (
-        <Box key={idx} flexDirection="column" marginBottom={1}>
-          <Text color={msg.role === "user" ? "green" : "yellow"}>
-            {msg.role === "user" ? "You:" : "Assistant:"}
-          </Text>
-          <Text wrap="wrap">{msg.content}</Text>
-        </Box>
-      ))}
-
-      {/* Spinner during thinking */}
-      {thinking && (
-        <Box marginBottom={1}>
-          <Text color="magenta">
-            <Spinner type="dots" /> Thinking...
-          </Text>
-        </Box>
-      )}
-
-      {/* Error if any */}
-      {error && (
-        <Box marginBottom={1}>
-          <Text color="red">❗ {error}</Text>
-        </Box>
-      )}
-
-      {/* Input box when not thinking */}
-      {!thinking && (
-        <Box>
-          <TextInput
-            placeholder="Type your next question and press Enter..."
-            value={input}
-            onChange={setInput}
-          />
-        </Box>
-      )}
-
-      {/* Footer instructions */}
-      <Box marginTop={1}>
-        <Text dimColor>
-          Press Enter to send | Ctrl+C to exit
-        </Text>
+      {/* 🎯 Predefined Prompts */}
+      <Box marginBottom={1} flexDirection="column" borderStyle="classic" borderColor="magenta" width="80%" padding={1} alignSelf="center">
+        <Text>🧠 Predefined Prompts:</Text>
+        {predefinedPrompts.map((prompt, idx) => (
+          <Text key={idx} color="yellow">- {prompt}</Text>
+        ))}
       </Box>
+
+      {/* 📬 Assistant Response */}
+      {response && (
+        <Box marginBottom={1} flexDirection="column" borderStyle="round" borderColor="green" width="80%" paddingX={1} alignSelf="center">
+          <Text color="magentaBright">💬 Assistant Response:</Text>
+          <Text>{response}</Text>
+          {tokensUsed !== null && (
+            <Text color="cyan">Tokens: {tokensUsed} | Time: {timeTaken}s</Text>
+          )}
+        </Box>
+      )}
+
+      {/* 🧩 Input Area */}
+      <Box flexDirection="column" width="80%" alignSelf="center" marginTop={1}>
+        <Box borderStyle="round" borderColor="blue" paddingX={1}>
+          {thinking ? (
+            <Text color="green">
+              <Spinner type="dots" /> Thinking...
+            </Text>
+          ) : (
+            <TextInput
+              value={input}
+              onChange={setInput}
+              onSubmit={handleSubmit}
+              placeholder="Type your question here..."
+            />
+          )}
+        </Box>
+        <Box marginTop={1}>
+          <Text>
+            <Text color="blue">Press Enter</Text> to send | <Text color="yellow">/clear</Text> to reset
+          </Text>
+        </Box>
+      </Box>
+
     </Box>
   );
 };

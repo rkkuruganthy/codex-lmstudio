@@ -1,35 +1,46 @@
 // Location: src/cli-lmstudio.tsx
 
-import { render } from "ink";
 import React from "react";
+import { render, Box } from "ink";
 import { CodexApp } from "./components/codex-app.js";
+import { Banner } from "./components/banner.js"; // Optional
 import { Command } from "commander";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
 
 // Load environment variables
 dotenv.config();
+
+// Load codex-config.json if available
+const configPath = path.resolve(process.cwd(), "codex-config.json");
+let config: any = {};
+
+try {
+  const configFile = fs.readFileSync(configPath, "utf-8");
+  config = JSON.parse(configFile);
+} catch (error) {
+  console.error("⚠️ Warning: codex-config.json not found. Using defaults.");
+}
 
 // CLI setup
 const program = new Command();
 
 program
-  .name("codex")
-  .description("Codex CLI with LMStudio backend")
-  .option("-p, --prompt <prompt>", "Prompt to send to LMStudio")
-  .option("-m, --model <model>", "Model to use", "qwen2.5-coder-14b-instruct")
+  .name(config.shortcut_command || "CodeAssist")
+  .description("CodeAssist CLI powered by LMStudio and Qwen")
+  .option("-m, --model <model>", "Model to use", config.default_model || "qwen2.5-coder-14b-instruct")
   .parse(process.argv);
 
 const options = program.opts();
 
-if (!options.prompt) {
-  console.error("❗ Please provide a prompt with -p or --prompt option.");
-  process.exit(1);
-}
-
-// Render the CodexApp React UI
+// Render the Ink app
 render(
-  <CodexApp
-    initialPrompt={options.prompt}
-    model={options.model}
-  />
+  <Box flexDirection="column">
+    <Banner />
+    <CodexApp
+      initialPrompt=""
+      model={options.model}
+    />
+  </Box>
 );
