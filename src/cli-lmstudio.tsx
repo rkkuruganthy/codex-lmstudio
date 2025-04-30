@@ -1,9 +1,8 @@
-// Location: src/cli-lmstudio.tsx
+// File: src/cli-lmstudio.tsx
 
 import React from "react";
-import { render, Box } from "ink";
+import { render } from "ink";
 import { CodexApp } from "./components/codex-app.js";
-import { Banner } from "./components/banner.js"; // Optional
 import { Command } from "commander";
 import dotenv from "dotenv";
 import fs from "fs";
@@ -34,13 +33,10 @@ program
 
 const options = program.opts();
 
-// Render the Ink app
+// Render the Ink app without the top banner (🧼 cleaned)
 render(
-  <Box flexDirection="column">
-    <Banner />
-    <CodexApp
-      initialPrompt=""
-      model={options.model}
-    />
-  </Box>
+  <CodexApp
+    initialPrompt=""
+    model={options.model}
+  />
 );

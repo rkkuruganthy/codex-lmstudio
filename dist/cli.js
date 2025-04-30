@@ -1670,8 +1670,8 @@ var require_cli_spinners = __commonJS({
 });
 
 // src/cli-lmstudio.tsx
-import React6 from "react";
-import { render, Box as Box3 } from "ink";
+import React5 from "react";
+import { render } from "ink";
 
 // src/components/codex-app.tsx
 import React4 from "react";
@@ -1796,6 +1796,156 @@ var build_default2 = Spinner;
 
 // src/components/codex-chat.tsx
 import fetch from "node-fetch";
+var CodexChat = ({
+  initialPrompt,
+  model,
+  predefinedPrompts: predefinedPrompts2,
+  config: config2
+}) => {
+  const [input, setInput] = useState3(initialPrompt || "");
+  const [messages, setMessages] = useState3([
+    { role: "system", content: "You are a helpful coding assistant." }
+  ]);
+  const [thinking, setThinking] = useState3(false);
+  const [response, setResponse] = useState3("");
+  const [tokensUsed, setTokensUsed] = useState3(null);
+  const [timeTaken, setTimeTaken] = useState3(null);
+  const handleSubmit = async () => {
+    if (input.trim() === "") return;
+    if (input.trim() === "/clear") {
+      setMessages([{ role: "system", content: "You are a helpful coding assistant." }]);
+      setInput("");
+      setResponse("");
+      setTokensUsed(null);
+      setTimeTaken(null);
+      return;
+    }
+    const newMessages = [...messages, { role: "user", content: input }];
+    setMessages(newMessages);
+    setThinking(true);
+    setInput("");
+    const start = Date.now();
+    const apiUrl = config2?.apiBaseUrl || "http://localhost:1234/v1";
+    const apiKey = config2?.apiKey || "sk-local";
+    try {
+      const res = await fetch(`${apiUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          messages: newMessages,
+          temperature: 0.2,
+          stream: false
+        })
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`API Error: ${errorText}`);
+      }
+      const data = await res.json();
+      const assistantReply = data.choices?.[0]?.message?.content || "No reply.";
+      const tokens = data.usage?.total_tokens || null;
+      const end = Date.now();
+      setThinking(false);
+      setResponse(assistantReply);
+      setMessages((prev) => [...prev, { role: "assistant", content: assistantReply }]);
+      setTokensUsed(tokens);
+      setTimeTaken(Math.round((end - start) / 1e3));
+    } catch (error) {
+      setThinking(false);
+      console.error("\u{1F6A8} Error:", error);
+    }
+  };
+  return /* @__PURE__ */ React3.createElement(Box, { flexDirection: "column", padding: 1, width: "80%" }, /* @__PURE__ */ React3.createElement(
+    Box,
+    {
+      marginBottom: 1,
+      flexDirection: "column",
+      borderStyle: "round",
+      borderColor: "cyan",
+      width: "80%",
+      alignSelf: "center"
+    },
+    /* @__PURE__ */ React3.createElement(Text3, { color: "cyanBright" }, "\u{1F680} CodeAssist CLI (by Ravi)"),
+    /* @__PURE__ */ React3.createElement(Text3, { color: "green" }, "Built with LMStudio + Qwen2.5")
+  ), /* @__PURE__ */ React3.createElement(
+    Box,
+    {
+      marginBottom: 1,
+      flexDirection: "column",
+      borderStyle: "classic",
+      borderColor: "yellow",
+      width: "80%",
+      padding: 1,
+      alignSelf: "center"
+    },
+    /* @__PURE__ */ React3.createElement(Text3, null, "\u{1F4E6} Default Repo: ", config2?.defaultRepo || "N/A"),
+    /* @__PURE__ */ React3.createElement(Text3, null, "\u{1F6E0}\uFE0F Model: ", model),
+    /* @__PURE__ */ React3.createElement(Text3, null, "\u{1F4C2} Path: ", config2?.defaultPath || "N/A")
+  ), Array.isArray(predefinedPrompts2) && predefinedPrompts2.length > 0 && /* @__PURE__ */ React3.createElement(
+    Box,
+    {
+      marginBottom: 1,
+      flexDirection: "column",
+      borderStyle: "classic",
+      borderColor: "magenta",
+      width: "80%",
+      padding: 1,
+      alignSelf: "center"
+    },
+    /* @__PURE__ */ React3.createElement(Text3, { color: "magentaBright" }, "\u{1F9E0} Predefined Prompts:"),
+    predefinedPrompts2.map((prompt, idx) => /* @__PURE__ */ React3.createElement(Text3, { key: idx, color: "yellow" }, "- ", prompt))
+  ), response && /* @__PURE__ */ React3.createElement(
+    Box,
+    {
+      marginBottom: 1,
+      flexDirection: "column",
+      borderStyle: "round",
+      borderColor: "green",
+      width: "80%",
+      paddingX: 1,
+      alignSelf: "center"
+    },
+    /* @__PURE__ */ React3.createElement(Text3, { color: "magentaBright" }, "\u{1F4AC} Assistant Response:"),
+    /* @__PURE__ */ React3.createElement(Text3, null, response),
+    tokensUsed !== null && /* @__PURE__ */ React3.createElement(Text3, { color: "cyan" }, "Tokens: ", tokensUsed, " | Time: ", timeTaken, "s")
+  ), !thinking && /* @__PURE__ */ React3.createElement(
+    Box,
+    {
+      flexDirection: "column",
+      width: "80%",
+      alignSelf: "center",
+      marginTop: 1
+    },
+    /* @__PURE__ */ React3.createElement(Box, { borderStyle: "round", borderColor: "blue", paddingX: 1 }, /* @__PURE__ */ React3.createElement(
+      build_default,
+      {
+        value: input,
+        onChange: setInput,
+        onSubmit: handleSubmit,
+        placeholder: "Type your question here...",
+        focus: true
+      }
+    )),
+    /* @__PURE__ */ React3.createElement(Box, { marginTop: 1 }, /* @__PURE__ */ React3.createElement(Text3, null, "Press ", /* @__PURE__ */ React3.createElement(Text3, { color: "green" }, "Enter"), " to send | ", /* @__PURE__ */ React3.createElement(Text3, { color: "red" }, "/clear"), " to reset"))
+  ), thinking && /* @__PURE__ */ React3.createElement(Box, { marginTop: 1 }, /* @__PURE__ */ React3.createElement(Text3, { color: "green" }, /* @__PURE__ */ React3.createElement(build_default2, { type: "dots" }), " Thinking...")));
+};
+
+// src/utils/config.ts
+var finalConfig = {
+  apiBaseUrl: "http://localhost:1234/v1",
+  // LM Studio local server
+  apiKey: "sk-local",
+  // Dummy key used by LM Studio
+  defaultRepo: "https://github.com/rkkuruganthy/codex-lmstudio",
+  defaultModel: "qwen2.5-coder-14b-instruct",
+  defaultPath: "/Users/ravikuruganthy/myApps"
+};
+
+// src/components/codex-app.tsx
 var predefinedPrompts = [
   "Generate unit tests",
   "Review my code",
@@ -1806,88 +1956,15 @@ var predefinedPrompts = [
   "Find security vulnerabilities",
   "Summarize the code"
 ];
-var CodexChat = ({ initialPrompt, model }) => {
-  const [input, setInput] = useState3(initialPrompt || "");
-  const [response, setResponse] = useState3("");
-  const [thinking, setThinking] = useState3(false);
-  const [tokensUsed, setTokensUsed] = useState3(null);
-  const [timeTaken, setTimeTaken] = useState3(null);
-  const handleSubmit = async (value) => {
-    if (!value.trim()) return;
-    if (value.trim() === "/clear") {
-      setResponse("");
-      setInput("");
-      setTokensUsed(null);
-      setTimeTaken(null);
-      return;
-    }
-    setThinking(true);
-    const start = Date.now();
-    const apiUrl = process.env.OPENAI_API_BASE_URL || "http://localhost:1234/v1";
-    const apiKey = process.env.LMSTUDIO_API_KEY || "sk-local";
-    try {
-      const res = await fetch(`${apiUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: "You are a helpful coding assistant." },
-            { role: "user", content: value }
-          ],
-          temperature: 0.2,
-          stream: false
-        })
-      });
-      const data = await res.json();
-      const assistantMessage = data.choices?.[0]?.message?.content || "No response.";
-      const tokens = data.usage?.total_tokens || null;
-      const end = Date.now();
-      setResponse(assistantMessage);
-      setTokensUsed(tokens);
-      setTimeTaken(Math.round((end - start) / 1e3));
-    } catch (error) {
-      console.error("\u{1F6A8} Error:", error);
-    } finally {
-      setThinking(false);
-      setInput("");
-    }
-  };
-  return /* @__PURE__ */ React3.createElement(Box, { flexDirection: "column", padding: 1, width: "100%" }, /* @__PURE__ */ React3.createElement(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "round", borderColor: "cyan", width: "80%", alignSelf: "center" }, /* @__PURE__ */ React3.createElement(Text3, { color: "cyanBright" }, "\u{1F680} CodeAssist CLI (by Ravi)"), /* @__PURE__ */ React3.createElement(Text3, { color: "green" }, "Built with \u2764\uFE0F LMStudio + Qwen2.5")), /* @__PURE__ */ React3.createElement(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "classic", borderColor: "magenta", width: "80%", padding: 1, alignSelf: "center" }, /* @__PURE__ */ React3.createElement(Text3, null, "\u{1F9E0} Predefined Prompts:"), predefinedPrompts.map((prompt, idx) => /* @__PURE__ */ React3.createElement(Text3, { key: idx, color: "yellow" }, "- ", prompt))), response && /* @__PURE__ */ React3.createElement(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "round", borderColor: "green", width: "80%", paddingX: 1, alignSelf: "center" }, /* @__PURE__ */ React3.createElement(Text3, { color: "magentaBright" }, "\u{1F4AC} Assistant Response:"), /* @__PURE__ */ React3.createElement(Text3, null, response), tokensUsed !== null && /* @__PURE__ */ React3.createElement(Text3, { color: "cyan" }, "Tokens: ", tokensUsed, " | Time: ", timeTaken, "s")), /* @__PURE__ */ React3.createElement(Box, { flexDirection: "column", width: "80%", alignSelf: "center", marginTop: 1 }, /* @__PURE__ */ React3.createElement(Box, { borderStyle: "round", borderColor: "blue", paddingX: 1 }, thinking ? /* @__PURE__ */ React3.createElement(Text3, { color: "green" }, /* @__PURE__ */ React3.createElement(build_default2, { type: "dots" }), " Thinking...") : /* @__PURE__ */ React3.createElement(
-    build_default,
-    {
-      value: input,
-      onChange: setInput,
-      onSubmit: handleSubmit,
-      placeholder: "Type your question here..."
-    }
-  )), /* @__PURE__ */ React3.createElement(Box, { marginTop: 1 }, /* @__PURE__ */ React3.createElement(Text3, null, /* @__PURE__ */ React3.createElement(Text3, { color: "blue" }, "Press Enter"), " to send | ", /* @__PURE__ */ React3.createElement(Text3, { color: "yellow" }, "/clear"), " to reset"))));
-};
-
-// src/components/codex-app.tsx
 var CodexApp = ({ initialPrompt, model }) => {
-  return /* @__PURE__ */ React4.createElement(CodexChat, { model });
-};
-
-// src/components/banner.tsx
-import React5 from "react";
-import { Box as Box2, Text as Text4 } from "ink";
-var Banner = () => {
-  return /* @__PURE__ */ React5.createElement(
-    Box2,
+  return /* @__PURE__ */ React4.createElement(
+    CodexChat,
     {
-      borderStyle: "round",
-      borderColor: "cyanBright",
-      paddingX: 2,
-      paddingY: 1,
-      flexDirection: "column",
-      marginBottom: 1
-    },
-    /* @__PURE__ */ React5.createElement(Text4, { color: "cyanBright" }, "\u{1F680} CodeAssist (Local Codex CLI)"),
-    /* @__PURE__ */ React5.createElement(Text4, { color: "gray" }, "Built with \u2764\uFE0F by Ravi using LMStudio & Qwen2.5!")
+      initialPrompt,
+      model,
+      predefinedPrompts,
+      config: finalConfig
+    }
   );
 };
 
@@ -1909,12 +1986,12 @@ var program = new Command();
 program.name(config.shortcut_command || "CodeAssist").description("CodeAssist CLI powered by LMStudio and Qwen").option("-m, --model <model>", "Model to use", config.default_model || "qwen2.5-coder-14b-instruct").parse(process.argv);
 var options = program.opts();
 render(
-  /* @__PURE__ */ React6.createElement(Box3, { flexDirection: "column" }, /* @__PURE__ */ React6.createElement(Banner, null), /* @__PURE__ */ React6.createElement(
+  /* @__PURE__ */ React5.createElement(
     CodexApp,
     {
       initialPrompt: "",
       model: options.model
     }
-  ))
+  )
 );
 //# sourceMappingURL=cli.js.map

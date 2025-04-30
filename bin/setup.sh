@@ -1,48 +1,24 @@
 #!/bin/bash
 
-# Location: bin/setup.sh
+echo "🔧 Setting up 'CodeAssist' CLI shortcut..."
 
-echo "🔵 Setting up CodeAssist CLI shortcut..."
+ALIAS_COMMAND="alias CodeAssist=\"$(pwd)/bin/codex-local.sh\""
+ZSHRC="$HOME/.zshrc"
 
-# Make codex-local.sh executable
-if [ -f "./bin/codex-local.sh" ]; then
-  chmod +x ./bin/codex-local.sh
+if ! grep -q "alias CodeAssist=" "$ZSHRC"; then
+  echo "$ALIAS_COMMAND" >> "$ZSHRC"
+  echo "✅ Alias 'CodeAssist' added to $ZSHRC"
 else
-  echo "❌ Error: codex-local.sh not found in ./bin/"
-  exit 1
+  echo "✅ Alias 'CodeAssist' already exists in $ZSHRC"
 fi
 
-# Define full path
-CODEASSIST_PATH="$(pwd)/bin/codex-local.sh"
+echo "🔄 Reloading shell configuration..."
 
-# Determine user's shell config
-SHELL_CONFIG=""
-
-if [ -f "$HOME/.zshrc" ]; then
-  SHELL_CONFIG="$HOME/.zshrc"
-elif [ -f "$HOME/.bashrc" ]; then
-  SHELL_CONFIG="$HOME/.bashrc"
+# Check if current shell is zsh, then source properly
+if [ -n "$ZSH_VERSION" ]; then
+  source "$ZSHRC"
 else
-  echo "⚠️ Warning: Could not find .zshrc or .bashrc automatically."
-  echo "Please manually add the alias manually to your shell config:"
-  echo "alias CodeAssist=\"$CODEASSIST_PATH\""
-  exit 1
+  echo "⚠️ You're not in a zsh session. Please run: source ~/.zshrc manually."
 fi
 
-# Add alias if not already present
-if grep -q "alias CodeAssist=" "$SHELL_CONFIG"; then
-  echo "✅ Alias 'CodeAssist' already exists in $SHELL_CONFIG"
-else
-  echo "" >> "$SHELL_CONFIG"
-  echo "# Alias added by CodeAssist setup" >> "$SHELL_CONFIG"
-  echo "alias CodeAssist=\"$CODEASSIST_PATH\"" >> "$SHELL_CONFIG"
-  echo "✅ Alias 'CodeAssist' added to $SHELL_CONFIG"
-fi
-
-# Reload shell configuration
-echo "🔵 Reloading your shell configuration from $SHELL_CONFIG..."
-source "$SHELL_CONFIG"
-
-echo ""
-echo "✅ Setup complete! You can now run 'CodeAssist' from anywhere 🎯"
-echo ""
+echo "🎉 You can now run CodeAssist from any terminal!"

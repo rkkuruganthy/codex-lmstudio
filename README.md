@@ -1,213 +1,147 @@
-# 🚀 CodeAssist CLI – Local Coding Assistant
+# CodeAssist CLI
 
-A world-class local coding assistant built using **LMStudio** + **Qwen2.5 Coder**  
-Powered by ❤️ open-source LLMs – no API keys, no cloud, fully offline!
-
----
-
-## ✨ What is CodeAssist?
-
-`CodeAssist` is a terminal-based CLI app that provides an AI coding assistant using **local LLMs** through LMStudio. It's built with React Ink and supports multi-turn chat, slash commands, and predefined prompts — all while running 100% locally.
+A world-class **local coding assistant** powered by **LMStudio** and **open-source LLMs** like Qwen2.5. No cloud. No API keys. 100% local execution.
 
 ---
 
-## 📦 Project Structure
+## ✨ Features
 
-```
+- 🧠 **Interactive Text UI** using React Ink
+- 🛠 Works with any LMStudio-supported model (Qwen, LLaMA, Mistral, Yi, etc.)
+- 🔁 Multi-turn chat with full assistant memory
+- ⚡ Slash Commands (`/clear`, `/summarize`, `/fix-errors`, etc.)
+- 💡 Predefined prompts (unit test generation, code review...)
+- 🎛 Configurable defaults (model, repo, path) via `codex-config.json`
+- 💬 Token usage and time display for every response
+- 🚫 No OpenAI, no network calls — Fully local
+
+---
+
+## 🖥 Prerequisites
+
+- Node.js ≥ 20
+- npm ≥ 8
+- LMStudio installed and running at `http://localhost:1234`
+- A supported model (e.g., `qwen2.5-coder-14b-instruct`) loaded into LMStudio
+
+---
+
+## 📦 Folder Structure
+
+```bash
 codex-cli/
 ├── bin/
-│   └── setup.sh                 # CLI alias installer
+│   └── setup.sh              # One-time CLI setup script
 ├── src/
+│   ├── cli-lmstudio.tsx      # Main entrypoint
 │   ├── components/
-│   │   ├── codex-app.tsx       # App initializer
-│   │   └── codex-chat.tsx      # Chat logic + UI
-│   ├── utils/
-│   │   └── config.ts           # Reads from config.json
-│   └── cli-lmstudio.tsx        # Main CLI entry
-├── codex-config.json           # Model + repo config
-└── package.json
+│   │   ├── codex-app.tsx     # App wrapper
+│   │   └── codex-chat.tsx    # Terminal UI logic
+│   └── utils/
+│       └── config.ts         # Config loader
+├── codex-config.json         # Local defaults for model, path, repo
+├── package.json
+└── README.md
 ```
 
 ---
 
-## ⚙️ Prerequisites
+## 🚀 Quick Start
 
-- **Node.js ≥ 20**
-- **npm ≥ 8**
-- **LMStudio installed & running**
-- **LLM loaded in LMStudio** (e.g., `qwen2.5-coder-14b-instruct`)
-
----
-
-## 🔧 Setup Instructions
-
-### 1. Clone the Repo
+### 1. Clone & Setup
 
 ```bash
-git clone https://github.com/yourusername/codex-lmstudio.git
+git clone https://github.com/rkkuruganthy/codex-lmstudio.git
 cd codex-lmstudio/codex/codex-cli
-```
-
-### 2. Install Dependencies
-
-```bash
 npm install
 ```
 
-Ensure these are included (they already are in `package.json`):
-
-```bash
-npm install ink ink-text-input ink-spinner chalk dotenv node-fetch commander uuid
-```
-
-### 3. Create CLI Shortcut (Optional)
+### 2. One-time Setup
 
 ```bash
 bash bin/setup.sh
 ```
 
-This will add a shortcut so you can just type `CodeAssist` from anywhere!
+✅ This sets up a CLI alias `CodeAssist` available from any terminal window.
 
 ---
 
-## 🔨 Build the App
+## 🧠 Usage
 
-```bash
-rm -rf dist
-esbuild src/cli-lmstudio.tsx \
-  --bundle \
-  --platform=node \
-  --format=esm \
-  --outfile=dist/cli.js \
-  --external:react \
-  --external:ink \
-  --external:dotenv \
-  --external:chalk \
-  --external:node-fetch \
-  --external:commander \
-  --external:node:events \
-  --external:node:fs \
-  --external:node:path \
-  --sourcemap
-```
+Make sure LMStudio is running and a model is loaded.
 
----
-
-## 🚀 Run CodeAssist
-
-Start LMStudio and load a model (e.g., Qwen2.5).  
-Then simply run:
+Then run:
 
 ```bash
 CodeAssist
 ```
 
-Or, if alias not configured:
+You’ll see:
+- Predefined prompts section
+- Input field to type your question
+- Slash command help
+
+---
+
+## 🎯 Supported Slash Commands
+
+```
+/clear         -> Clears conversation
+/help          -> Displays help menu
+/summarize     -> Summarizes the session
+/fix-errors    -> Suggests code fixes
+/review-code   -> Code review summary
+/generate-unit-tests -> Create unit tests
+```
+
+---
+
+## 🔁 Example Flow
 
 ```bash
-bash bin/codex-local.sh
+User: /generate-unit-tests
+Assistant: Sure! Paste the function you'd like tests for.
 ```
 
 ---
 
-## 🧠 Features
+## 🛠 Configuration (Optional)
 
-- ✅ Fully local LLM execution (via LMStudio)
-- ✅ Clean terminal UI using React Ink
-- ✅ One-line prompt or multi-line with `Shift+Enter`
-- ✅ Spinner while thinking
-- ✅ Token + Time counter after response
-- ✅ Predefined prompt suggestions
-- ✅ Slash commands for actions
+Edit the `codex-config.json` to set default repo, model, and path:
 
----
-
-## ⚡ Supported Slash Commands
-
-| Command         | Action                          |
-|-----------------|----------------------------------|
-| `/clear`        | Clears chat history              |
-| `/help`         | Displays help and shortcuts      |
-| `/summarize`    | Summarizes your conversation     |
-| `/fix-errors`   | Suggests fixes for given code    |
-| `/review-code`  | Reviews your pasted code         |
-| `/generate-unit-tests` | Generates unit tests     |
-| `/optimize-code` | Optimizes a given function      |
-
----
-
-## 💡 Predefined Prompts (UI)
-
-These appear below your prompt box:
-
-- Generate unit tests  
-- Review my code  
-- Optimize this algorithm  
-- Suggest improvements  
-- Explain this code  
-- Write documentation  
-- Find security vulnerabilities  
-- Summarize the code  
-
----
-
-## 📥 Example Usage
-
-```
-🧠 CodeAssist CLI (by Ravi)
-Built with LMStudio + Qwen2.5
-
-📦 Default Repo: https://github.com/rkkuruganthy/codex-local
-🛠️ Model: qwen2.5-coder-14b-instruct
-📂 Path: /Users/you/projects/
-
-💬 Type your coding question here...
-> How do I create a REST API in FastAPI?
+```json
+{
+  "defaultRepo": "https://github.com/rkkuruganthy/codex-lmstudio",
+  "defaultModel": "qwen2.5-coder-14b-instruct",
+  "defaultPath": "/Users/ravikuruganthy/myApps"
+}
 ```
 
 ---
 
-## 🛠 Environment Config
+## 📈 Future Enhancements
 
-Set via `codex-local.sh`:
-
-```bash
-export PROVIDER=lmstudio
-export OPENAI_API_BASE_URL=http://localhost:1234/v1
-export LMSTUDIO_API_KEY=sk-local
-```
-
-No real API key required!
+- Session history saving
+- Streamed responses
+- Dark/light CLI themes
+- Dynamic model switching
 
 ---
 
-## 📜 Roadmap
+## 🙌 Credits
 
-### ✅ Phase 1 – MVP
-- [x] Interactive CLI input
-- [x] Spinner
-- [x] Config-driven setup
-- [x] Slash commands
-- [x] Predefined prompts
-- [x] Token usage and response time
+Created by **Ravi Kuruganthy** ❤️
 
-### 🚧 Phase 2 – Coming Soon
-- [ ] Session caching (local JSON)
-- [ ] Persist history
-- [ ] Dropdown-based prompt completion
+Inspired by the vision of building a developer-first, local-first, privacy-first coding assistant that works in any enterprise or air-gapped setup.
 
 ---
 
-## 👨‍💻 Author
+## ✅ Status
 
-Created and maintained by **Ravi Kuruganthy**  
-Built with ❤️ to support the modern engineering community.
+This version is **production-ready** and tested across multiple M1/M2/M3 Macs.
 
----
-
-## ✅ Production-Ready
-
-Clone → Install → Build → Run in minutes.  
-Perfect for **junior engineers**, hackathons, or local GenAI exploration!
+New engineers can get started in under 2 minutes.
 
 ---
+
+Happy coding! 🚀
