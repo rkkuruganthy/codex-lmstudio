@@ -1799,7 +1799,7 @@ import fetch from "node-fetch";
 var CodexChat = ({
   initialPrompt,
   model,
-  predefinedPrompts: predefinedPrompts2,
+  predefinedPrompts: predefinedPrompts2 = [],
   config: config2
 }) => {
   const [input, setInput] = useState3(initialPrompt || "");
@@ -1810,6 +1810,7 @@ var CodexChat = ({
   const [response, setResponse] = useState3("");
   const [tokensUsed, setTokensUsed] = useState3(null);
   const [timeTaken, setTimeTaken] = useState3(null);
+  const [placeholderVisible, setPlaceholderVisible] = useState3(true);
   const handleSubmit = async () => {
     if (input.trim() === "") return;
     if (input.trim() === "/clear") {
@@ -1818,12 +1819,14 @@ var CodexChat = ({
       setResponse("");
       setTokensUsed(null);
       setTimeTaken(null);
+      setPlaceholderVisible(true);
       return;
     }
     const newMessages = [...messages, { role: "user", content: input }];
     setMessages(newMessages);
     setThinking(true);
     setInput("");
+    setPlaceholderVisible(true);
     const start = Date.now();
     const apiUrl = config2?.apiBaseUrl || "http://localhost:1234/v1";
     const apiKey = config2?.apiKey || "sk-local";
@@ -1859,79 +1862,19 @@ var CodexChat = ({
       console.error("\u{1F6A8} Error:", error);
     }
   };
-  return /* @__PURE__ */ React3.createElement(Box, { flexDirection: "column", padding: 1, width: "80%" }, /* @__PURE__ */ React3.createElement(
-    Box,
+  return /* @__PURE__ */ React3.createElement(Box, { flexDirection: "column", padding: 1, width: "80%" }, /* @__PURE__ */ React3.createElement(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "round", borderColor: "cyan", width: "80%", alignSelf: "center" }, /* @__PURE__ */ React3.createElement(Text3, { color: "cyanBright" }, "\u{1F680} CodeAssist CLI (by Ravi)"), /* @__PURE__ */ React3.createElement(Text3, { color: "green" }, "Built with \u2764\uFE0F LMStudio + Qwen2.5")), /* @__PURE__ */ React3.createElement(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "classic", borderColor: "yellow", width: "80%", padding: 1, alignSelf: "center" }, /* @__PURE__ */ React3.createElement(Text3, null, "\u{1F4E6} Default Repo: ", config2?.defaultRepo || "N/A"), /* @__PURE__ */ React3.createElement(Text3, null, "\u{1F6E0}\uFE0F Model: ", model), /* @__PURE__ */ React3.createElement(Text3, null, "\u{1F4C2} Path: ", config2?.defaultPath || "N/A")), Array.isArray(predefinedPrompts2) && predefinedPrompts2.length > 0 && /* @__PURE__ */ React3.createElement(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "classic", borderColor: "magenta", width: "80%", padding: 1, alignSelf: "center" }, /* @__PURE__ */ React3.createElement(Text3, { color: "magentaBright" }, "\u{1F9E0} Predefined Prompts:"), predefinedPrompts2.map((prompt, idx) => /* @__PURE__ */ React3.createElement(Text3, { key: idx, color: "yellow" }, "- ", prompt))), response && /* @__PURE__ */ React3.createElement(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "round", borderColor: "green", width: "80%", paddingX: 1, alignSelf: "center" }, /* @__PURE__ */ React3.createElement(Text3, { color: "magentaBright" }, "\u{1F4AC} Assistant Response:"), /* @__PURE__ */ React3.createElement(Text3, null, response), tokensUsed !== null && /* @__PURE__ */ React3.createElement(Text3, { color: "cyan" }, "Tokens: ", tokensUsed, " | Time: ", timeTaken, "s")), !thinking && /* @__PURE__ */ React3.createElement(Box, { flexDirection: "column", width: "80%", alignSelf: "center", marginTop: 1 }, /* @__PURE__ */ React3.createElement(Box, { borderStyle: "round", borderColor: "blue", paddingX: 1 }, /* @__PURE__ */ React3.createElement(
+    build_default,
     {
-      marginBottom: 1,
-      flexDirection: "column",
-      borderStyle: "round",
-      borderColor: "cyan",
-      width: "80%",
-      alignSelf: "center"
-    },
-    /* @__PURE__ */ React3.createElement(Text3, { color: "cyanBright" }, "\u{1F680} CodeAssist CLI (by Ravi)"),
-    /* @__PURE__ */ React3.createElement(Text3, { color: "green" }, "Built with LMStudio + Qwen2.5")
-  ), /* @__PURE__ */ React3.createElement(
-    Box,
-    {
-      marginBottom: 1,
-      flexDirection: "column",
-      borderStyle: "classic",
-      borderColor: "yellow",
-      width: "80%",
-      padding: 1,
-      alignSelf: "center"
-    },
-    /* @__PURE__ */ React3.createElement(Text3, null, "\u{1F4E6} Default Repo: ", config2?.defaultRepo || "N/A"),
-    /* @__PURE__ */ React3.createElement(Text3, null, "\u{1F6E0}\uFE0F Model: ", model),
-    /* @__PURE__ */ React3.createElement(Text3, null, "\u{1F4C2} Path: ", config2?.defaultPath || "N/A")
-  ), Array.isArray(predefinedPrompts2) && predefinedPrompts2.length > 0 && /* @__PURE__ */ React3.createElement(
-    Box,
-    {
-      marginBottom: 1,
-      flexDirection: "column",
-      borderStyle: "classic",
-      borderColor: "magenta",
-      width: "80%",
-      padding: 1,
-      alignSelf: "center"
-    },
-    /* @__PURE__ */ React3.createElement(Text3, { color: "magentaBright" }, "\u{1F9E0} Predefined Prompts:"),
-    predefinedPrompts2.map((prompt, idx) => /* @__PURE__ */ React3.createElement(Text3, { key: idx, color: "yellow" }, "- ", prompt))
-  ), response && /* @__PURE__ */ React3.createElement(
-    Box,
-    {
-      marginBottom: 1,
-      flexDirection: "column",
-      borderStyle: "round",
-      borderColor: "green",
-      width: "80%",
-      paddingX: 1,
-      alignSelf: "center"
-    },
-    /* @__PURE__ */ React3.createElement(Text3, { color: "magentaBright" }, "\u{1F4AC} Assistant Response:"),
-    /* @__PURE__ */ React3.createElement(Text3, null, response),
-    tokensUsed !== null && /* @__PURE__ */ React3.createElement(Text3, { color: "cyan" }, "Tokens: ", tokensUsed, " | Time: ", timeTaken, "s")
-  ), !thinking && /* @__PURE__ */ React3.createElement(
-    Box,
-    {
-      flexDirection: "column",
-      width: "80%",
-      alignSelf: "center",
-      marginTop: 1
-    },
-    /* @__PURE__ */ React3.createElement(Box, { borderStyle: "round", borderColor: "blue", paddingX: 1 }, /* @__PURE__ */ React3.createElement(
-      build_default,
-      {
-        value: input,
-        onChange: setInput,
-        onSubmit: handleSubmit,
-        placeholder: "Type your question here...",
-        focus: true
-      }
-    )),
-    /* @__PURE__ */ React3.createElement(Box, { marginTop: 1 }, /* @__PURE__ */ React3.createElement(Text3, null, "Press ", /* @__PURE__ */ React3.createElement(Text3, { color: "green" }, "Enter"), " to send | ", /* @__PURE__ */ React3.createElement(Text3, { color: "red" }, "/clear"), " to reset"))
-  ), thinking && /* @__PURE__ */ React3.createElement(Box, { marginTop: 1 }, /* @__PURE__ */ React3.createElement(Text3, { color: "green" }, /* @__PURE__ */ React3.createElement(build_default2, { type: "dots" }), " Thinking...")));
+      value: input,
+      onChange: (val) => {
+        setInput(val);
+        if (placeholderVisible && val !== "") setPlaceholderVisible(false);
+      },
+      onSubmit: handleSubmit,
+      placeholder: placeholderVisible ? "Type your question here..." : "",
+      focus: true
+    }
+  )), /* @__PURE__ */ React3.createElement(Box, { marginTop: 1 }, /* @__PURE__ */ React3.createElement(Text3, null, "Press ", /* @__PURE__ */ React3.createElement(Text3, { color: "green" }, "Enter"), " to send | ", /* @__PURE__ */ React3.createElement(Text3, { color: "yellow" }, "Shift+Enter"), " for newline | ", /* @__PURE__ */ React3.createElement(Text3, { color: "red" }, "/clear"), " to reset"))), thinking && /* @__PURE__ */ React3.createElement(Box, { marginTop: 1 }, /* @__PURE__ */ React3.createElement(Text3, { color: "green" }, /* @__PURE__ */ React3.createElement(build_default2, { type: "dots" }), " Thinking...")));
 };
 
 // src/utils/config.ts
