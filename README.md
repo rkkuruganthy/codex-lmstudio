@@ -155,7 +155,7 @@ These appear below your prompt box:
 
 ```
 🧠 CodeAssist CLI (by Ravi)
-Built with ❤️ LMStudio + Qwen2.5
+Built with LMStudio + Qwen2.5
 
 📦 Default Repo: https://github.com/rkkuruganthy/codex-local
 🛠️ Model: qwen2.5-coder-14b-instruct
