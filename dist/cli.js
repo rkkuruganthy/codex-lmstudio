@@ -1796,6 +1796,27 @@ var build_default2 = Spinner;
 
 // src/components/codex-chat.tsx
 import fetch from "node-fetch";
+import fs2 from "fs";
+
+// src/utils/ensureHistoryFileExists.ts
+import fs from "fs";
+import path from "path";
+import os from "os";
+var historyDir = path.join(os.homedir(), ".codex", "history");
+var historyFilePath = path.join(historyDir, "session-history.json");
+function getHistoryFilePath() {
+  return historyFilePath;
+}
+function ensureHistoryFileExists() {
+  if (!fs.existsSync(historyDir)) {
+    fs.mkdirSync(historyDir, { recursive: true });
+  }
+  if (!fs.existsSync(historyFilePath)) {
+    fs.writeFileSync(historyFilePath, "[]", "utf-8");
+  }
+}
+
+// src/components/codex-chat.tsx
 var CodexChat = ({
   initialPrompt,
   model,
@@ -1803,33 +1824,47 @@ var CodexChat = ({
   config: config2
 }) => {
   const [input, setInput] = useState3(initialPrompt || "");
-  const [messages, setMessages] = useState3([
-    { role: "system", content: "You are a helpful coding assistant." }
-  ]);
+  const [messages, setMessages] = useState3([{
+    role: "system",
+    content: "You are a helpful coding assistant."
+  }]);
   const [thinking, setThinking] = useState3(false);
   const [response, setResponse] = useState3("");
   const [tokensUsed, setTokensUsed] = useState3(null);
   const [timeTaken, setTimeTaken] = useState3(null);
-  const [placeholderVisible, setPlaceholderVisible] = useState3(true);
   const handleSubmit = async () => {
-    if (input.trim() === "") return;
-    if (input.trim() === "/clear") {
+    const trimmedInput = input.trim();
+    if (!trimmedInput) return;
+    const historyFilePath2 = getHistoryFilePath();
+    await ensureHistoryFileExists(historyFilePath2);
+    if (trimmedInput === "/clear") {
       setMessages([{ role: "system", content: "You are a helpful coding assistant." }]);
-      setInput("");
       setResponse("");
+      setInput("");
       setTokensUsed(null);
       setTimeTaken(null);
-      setPlaceholderVisible(true);
+      fs2.writeFileSync(historyFilePath2, JSON.stringify([]));
+      return;
+    }
+    if (trimmedInput === "/history") {
+      try {
+        const historyData = fs2.readFileSync(historyFilePath2, "utf-8");
+        const history = JSON.parse(historyData);
+        const historyOutput = history.length ? history.map((entry, i) => `${i + 1}. ${entry.prompt} \u2192 ${entry.response}`).join("\n") : "No history yet.";
+        setResponse(historyOutput);
+      } catch (e) {
+        setResponse("Failed to load history.");
+      }
+      setInput("");
       return;
     }
     const newMessages = [...messages, { role: "user", content: input }];
     setMessages(newMessages);
     setThinking(true);
     setInput("");
-    setPlaceholderVisible(true);
     const start = Date.now();
-    const apiUrl = config2?.apiBaseUrl || "http://localhost:1234/v1";
-    const apiKey = config2?.apiKey || "sk-local";
+    const apiUrl = config2.apiBaseUrl || "http://localhost:1234/v1";
+    const apiKey = config2.apiKey || "sk-local";
     try {
       const res = await fetch(`${apiUrl}/chat/completions`, {
         method: "POST",
@@ -1844,10 +1879,7 @@ var CodexChat = ({
           stream: false
         })
       });
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`API Error: ${errorText}`);
-      }
+      if (!res.ok) throw new Error(`API Error: ${await res.text()}`);
       const data = await res.json();
       const assistantReply = data.choices?.[0]?.message?.content || "No reply.";
       const tokens = data.usage?.total_tokens || null;
@@ -1857,6 +1889,9 @@ var CodexChat = ({
       setMessages((prev) => [...prev, { role: "assistant", content: assistantReply }]);
       setTokensUsed(tokens);
       setTimeTaken(Math.round((end - start) / 1e3));
+      const history = JSON.parse(fs2.readFileSync(historyFilePath2, "utf-8"));
+      history.push({ prompt: input, response: assistantReply });
+      fs2.writeFileSync(historyFilePath2, JSON.stringify(history, null, 2));
     } catch (error) {
       setThinking(false);
       console.error("\u{1F6A8} Error:", error);
@@ -1866,15 +1901,12 @@ var CodexChat = ({
     build_default,
     {
       value: input,
-      onChange: (val) => {
-        setInput(val);
-        if (placeholderVisible && val !== "") setPlaceholderVisible(false);
-      },
+      onChange: setInput,
       onSubmit: handleSubmit,
-      placeholder: placeholderVisible ? "Type your question here..." : "",
+      placeholder: "Type your question here",
       focus: true
     }
-  )), /* @__PURE__ */ React3.createElement(Box, { marginTop: 1 }, /* @__PURE__ */ React3.createElement(Text3, null, "Press ", /* @__PURE__ */ React3.createElement(Text3, { color: "green" }, "Enter"), " to send | ", /* @__PURE__ */ React3.createElement(Text3, { color: "yellow" }, "Shift+Enter"), " for newline | ", /* @__PURE__ */ React3.createElement(Text3, { color: "red" }, "/clear"), " to reset"))), thinking && /* @__PURE__ */ React3.createElement(Box, { marginTop: 1 }, /* @__PURE__ */ React3.createElement(Text3, { color: "green" }, /* @__PURE__ */ React3.createElement(build_default2, { type: "dots" }), " Thinking...")));
+  )), /* @__PURE__ */ React3.createElement(Box, { marginTop: 1 }, /* @__PURE__ */ React3.createElement(Text3, null, "Press ", /* @__PURE__ */ React3.createElement(Text3, { color: "green" }, "Enter"), " to send | ", /* @__PURE__ */ React3.createElement(Text3, { color: "red" }, "/history"), " or ", /* @__PURE__ */ React3.createElement(Text3, { color: "red" }, "/clear")))), thinking && /* @__PURE__ */ React3.createElement(Box, { marginTop: 1 }, /* @__PURE__ */ React3.createElement(Text3, { color: "green" }, /* @__PURE__ */ React3.createElement(build_default2, { type: "dots" }), " Thinking...")));
 };
 
 // src/utils/config.ts
@@ -1914,13 +1946,13 @@ var CodexApp = ({ initialPrompt, model }) => {
 // src/cli-lmstudio.tsx
 import { Command } from "commander";
 import dotenv from "dotenv";
-import fs from "fs";
-import path from "path";
+import fs3 from "fs";
+import path2 from "path";
 dotenv.config();
-var configPath = path.resolve(process.cwd(), "codex-config.json");
+var configPath = path2.resolve(process.cwd(), "codex-config.json");
 var config = {};
 try {
-  const configFile = fs.readFileSync(configPath, "utf-8");
+  const configFile = fs3.readFileSync(configPath, "utf-8");
   config = JSON.parse(configFile);
 } catch (error) {
   console.error("\u26A0\uFE0F Warning: codex-config.json not found. Using defaults.");

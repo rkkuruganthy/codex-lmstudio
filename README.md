@@ -1,147 +1,151 @@
-# CodeAssist CLI
+# 🚀 CodeAssist – Local Coding Assistant CLI
 
-A world-class **local coding assistant** powered by **LMStudio** and **open-source LLMs** like Qwen2.5. No cloud. No API keys. 100% local execution.
+**CodeAssist** is a powerful, fully local coding assistant built with ❤️ using **LMStudio** and open-source models like **Qwen2.5 Coder**. Designed for speed, privacy, and flexibility, it requires no external APIs, making it ideal for enterprise and offline development environments.
 
----
-
-## ✨ Features
-
-- 🧠 **Interactive Text UI** using React Ink
-- 🛠 Works with any LMStudio-supported model (Qwen, LLaMA, Mistral, Yi, etc.)
-- 🔁 Multi-turn chat with full assistant memory
-- ⚡ Slash Commands (`/clear`, `/summarize`, `/fix-errors`, etc.)
-- 💡 Predefined prompts (unit test generation, code review...)
-- 🎛 Configurable defaults (model, repo, path) via `codex-config.json`
-- 💬 Token usage and time display for every response
-- 🚫 No OpenAI, no network calls — Fully local
+> 🎯 **Mission**: Deliver a world-class, locally executable AI assistant that boosts developer productivity while maintaining full control over code and data.
 
 ---
 
-## 🖥 Prerequisites
+## ✨ Highlights
 
-- Node.js ≥ 20
-- npm ≥ 8
-- LMStudio installed and running at `http://localhost:1234`
-- A supported model (e.g., `qwen2.5-coder-14b-instruct`) loaded into LMStudio
+### ✅ Built-in Phase 1 Capabilities
+
+- ⚡ **100% Local**: All interactions run against locally hosted LLMs in LMStudio (no OpenAI API needed)
+- 🧠 **Intelligent Assistant**: Responds to natural language queries with full multi-turn chat support
+- 🗂️ **Contextual Awareness**: Reads default repo/model/path from a local `codex-config.json`
+- 📌 **Predefined Prompts**:
+  - Generate unit tests
+  - Review my code
+  - Optimize this algorithm
+  - Suggest improvements
+  - Explain this code
+  - Write documentation
+  - Find security vulnerabilities
+  - Summarize the code
+- ⏱️ **Feedback Metrics**: Displays token usage and response time
+- 🧹 **Slash Commands**:
+  - `/clear` – Reset the conversation
+  - `/history` – View prior prompt/responses
+- ⌨️ **Keyboard Shortcuts**:
+  - `Enter` to send
+  - `Shift+Enter` to add a new line (for multi-line prompts)
+
+---
+
+### ✅ Phase 2: Productivity & Persistence Features
+
+- 💾 **Session Caching**: Logs each prompt + response to `history/session-history.json`
+- 🧭 **/history View**: Lets users recall past interactions in structured format
+- 🧹 **/clear Resets All**: Clears input and history in a clean, error-free manner
+- 🔽 **Command Dropdown (WIP)**: Navigate predefined actions via arrow keys or mouse (coming soon)
+- 💡 **Improved Text Input**: Respects placeholder and newlines without breaking layout
+- 🧱 **Modular Utilities**:
+  - `ensureHistoryFileExists.ts`
+  - `getHistoryFilePath.ts`
 
 ---
 
 ## 📦 Folder Structure
 
-```bash
-codex-cli/
-├── bin/
-│   └── setup.sh              # One-time CLI setup script
-├── src/
-│   ├── cli-lmstudio.tsx      # Main entrypoint
-│   ├── components/
-│   │   ├── codex-app.tsx     # App wrapper
-│   │   └── codex-chat.tsx    # Terminal UI logic
-│   └── utils/
-│       └── config.ts         # Config loader
-├── codex-config.json         # Local defaults for model, path, repo
-├── package.json
-└── README.md
-```
+codex-cli/ ├── bin/ │ └── codex-local.sh # CLI launcher script ├── src/ │ ├── components/ │ │ ├── codex-app.tsx # Top-level app container │ │ └── codex-chat.tsx # Core CLI interaction logic │ ├── utils/ │ │ ├── config.ts # Loads dynamic config │ │ ├── ensureHistoryFileExists.ts # History file bootstrap │ │ └── getHistoryFilePath.ts # Path resolution for history file │ └── cli-lmstudio.tsx # Main CLI entrypoint ├── history/ │ └── session-history.json # JSON log of user and assistant messages ├── codex-config.json # App-level defaults ├── package.json └── README.md
+
+yaml
+Copy
+Edit
 
 ---
 
-## 🚀 Quick Start
+## ⚙️ Prerequisites
 
-### 1. Clone & Setup
+- ✅ Node.js ≥ 20.x
+- ✅ `esbuild` (globally installed): `npm install -g esbuild`
+- ✅ LMStudio running locally at `http://localhost:1234`
+- ✅ Local model downloaded (e.g., Qwen2.5 Coder GGUF)
+
+---
+
+## 🚀 Quick Setup
+
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/rkkuruganthy/codex-lmstudio.git
-cd codex-lmstudio/codex/codex-cli
+cd codex-lmstudio
 npm install
-```
-
-### 2. One-time Setup
-
-```bash
+2. Build the CLI
+bash
+Copy
+Edit
+rm -rf dist
+esbuild src/cli-lmstudio.tsx \
+  --bundle \
+  --platform=node \
+  --format=esm \
+  --outfile=dist/cli.js \
+  --external:react \
+  --external:ink \
+  --external:dotenv \
+  --external:chalk \
+  --external:node-fetch \
+  --external:commander \
+  --external:node:events \
+  --external:node:fs \
+  --external:node:path \
+  --sourcemap
+3. Create CLI Shortcut
+bash
+Copy
+Edit
 bash bin/setup.sh
-```
+source ~/.zshrc   # or ~/.bashrc based on your shell
+Now just type:
 
-✅ This sets up a CLI alias `CodeAssist` available from any terminal window.
-
----
-
-## 🧠 Usage
-
-Make sure LMStudio is running and a model is loaded.
-
-Then run:
-
-```bash
+bash
+Copy
+Edit
 CodeAssist
-```
+💬 How to Use
+Type your coding query or predefined command
 
-You’ll see:
-- Predefined prompts section
-- Input field to type your question
-- Slash command help
+Use Shift+Enter to compose multi-line prompts
 
----
+Use /clear to reset the assistant
 
-## 🎯 Supported Slash Commands
+Use /history to view previous prompts and answers
 
-```
-/clear         -> Clears conversation
-/help          -> Displays help menu
-/summarize     -> Summarizes the session
-/fix-errors    -> Suggests code fixes
-/review-code   -> Code review summary
-/generate-unit-tests -> Create unit tests
-```
+Example:
 
----
+bash
+Copy
+Edit
+> /generate-unit-tests
 
-## 🔁 Example Flow
+> def is_prime(n): ...
+🔧 codex-config.json
+Customize default context here:
 
-```bash
-User: /generate-unit-tests
-Assistant: Sure! Paste the function you'd like tests for.
-```
-
----
-
-## 🛠 Configuration (Optional)
-
-Edit the `codex-config.json` to set default repo, model, and path:
-
-```json
+json
+Copy
+Edit
 {
   "defaultRepo": "https://github.com/rkkuruganthy/codex-lmstudio",
   "defaultModel": "qwen2.5-coder-14b-instruct",
   "defaultPath": "/Users/ravikuruganthy/myApps"
 }
-```
+📜 Sample Commands
+Slash Command	Description
+/clear	Clears current input + history
+/history	View logged prompt/response entries
+/summarize	Summarize current conversation
+/generate-unit-tests	Trigger unit test generation
 
----
+🧠 Built For
+Local-first AI development
 
-## 📈 Future Enhancements
+Engineers working in secure environments
 
-- Session history saving
-- Streamed responses
-- Dark/light CLI themes
-- Dynamic model switching
+AI productivity without vendor lock-in
 
----
-
-## 🙌 Credits
-
-Created by **Ravi Kuruganthy** ❤️
-
-Inspired by the vision of building a developer-first, local-first, privacy-first coding assistant that works in any enterprise or air-gapped setup.
-
----
-
-## ✅ Status
-
-This version is **production-ready** and tested across multiple M1/M2/M3 Macs.
-
-New engineers can get started in under 2 minutes.
-
----
-
-Happy coding! 🚀
+👨‍💻 Author
+Developed by Ravi Kuruganthy
+Built with a vision to empower modern developers with world-class local GenAI to

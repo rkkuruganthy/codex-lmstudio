@@ -1,99 +1,44 @@
-// Location: src/utils/session.ts
+// File: src/utils/session.ts
 
-import fetch from "node-fetch";
-import { v4 as uuidv4 } from "uuid";
-import dotenv from "dotenv";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { join } from "path";
+import { homedir } from "os";
 
-// Load environment variables
-dotenv.config();
+const SESSION_DIR = join(homedir(), ".codeassist-sessions");
+const SESSION_FILE = join(SESSION_DIR, "history.json");
 
-export interface Message {
-  role: "system" | "user" | "assistant";
-  content: string;
+export interface SessionEntry {
+  timestamp: string;
+  prompt: string;
+  response: string;
 }
 
-export interface SessionOptions {
-  model?: string;
-}
-
-export interface Session {
-  id: string;
-  model: string;
-  history: Message[];
-  send: (input: string) => Promise<string>;
-}
-
-export function createSession(options: SessionOptions = {}): Session {
-  const id = uuidv4();
-  const model = options.model || "qwen2.5-coder-14b-instruct";
-
-  async function send(input: string): Promise<string> {
-    const apiUrl = process.env.OPENAI_API_BASE_URL || "http://localhost:1234/v1";
-    const apiKey = process.env.LMSTUDIO_API_KEY || "sk-local";
-
-    const history = session.history;
-    const messages = [
-      ...history,
-      { role: "user", content: input }
-    ];
-
-    console.log("📩 Sending to LMStudio:", {
-      apiUrl,
-      model,
-      messages
-    });
-
-    try {
-      const response = await fetch(`${apiUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: messages,
-          temperature: 0.2,
-          stream: false,
-        }),
-      });
-
-      console.log("📥 LMStudio Response status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❗ LMStudio Error Response Text:", errorText);
-        throw new Error(`LMStudio Error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log("✅ LMStudio Response JSON received");
-
-      const assistantReply = data.choices?.[0]?.message?.content;
-
-      if (!assistantReply) {
-        throw new Error("❗ Assistant reply missing in LMStudio response!");
-      }
-
-      session.history.push({ role: "user", content: input });
-      session.history.push({ role: "assistant", content: assistantReply });
-
-      return assistantReply;
-
-    } catch (err: any) {
-      console.error("🚨 Fetch from LMStudio failed:", err.message);
-      throw err;
-    }
+// Ensure the folder exists
+function ensureSessionDir(): void {
+  if (!existsSync(SESSION_DIR)) {
+    mkdirSync(SESSION_DIR, { recursive: true });
   }
+}
 
-  const session: Session = {
-    id,
-    model,
-    history: [
-      { role: "system", content: "You are a helpful coding assistant." }
-    ],
-    send,
+export function saveToSession(prompt: string, response: string): void {
+  ensureSessionDir();
+  const entry: SessionEntry = {
+    timestamp: new Date().toISOString(),
+    prompt,
+    response,
   };
 
-  return session;
+  const existing: SessionEntry[] = loadSessionHistory();
+  existing.push(entry);
+  writeFileSync(SESSION_FILE, JSON.stringify(existing, null, 2), "utf-8");
+}
+
+export function loadSessionHistory(): SessionEntry[] {
+  if (!existsSync(SESSION_FILE)) return [];
+  try {
+    const data = readFileSync(SESSION_FILE, "utf-8");
+    return JSON.parse(data) as SessionEntry[];
+  } catch {
+    return [];
+  }
 }
