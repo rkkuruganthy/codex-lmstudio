@@ -2,21 +2,31 @@
 
 import fs from "fs";
 import path from "path";
-import os from "os";
 
-const historyDir = path.join(os.homedir(), ".codex", "history");
-const historyFilePath = path.join(historyDir, "session-history.json");
+const historyFileName = "history-cache.json";
 
 export function getHistoryFilePath(): string {
-  return historyFilePath;
+  const historyPath = path.resolve(process.cwd(), historyFileName);
+  return historyPath;
 }
 
-export function ensureHistoryFileExists(): void {
-  if (!fs.existsSync(historyDir)) {
-    fs.mkdirSync(historyDir, { recursive: true });
+export function ensureHistoryFileExists(filePath: string) {
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, JSON.stringify([]));
   }
+}
 
-  if (!fs.existsSync(historyFilePath)) {
-    fs.writeFileSync(historyFilePath, "[]", "utf-8");
+export function loadHistoryCache(): string[] {
+  const historyFile = getHistoryFilePath();
+  try {
+    if (!fs.existsSync(historyFile)) {
+      fs.writeFileSync(historyFile, JSON.stringify([]));
+    }
+    const data = fs.readFileSync(historyFile, "utf-8");
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.error("Failed to read history cache:", err);
+    return [];
   }
 }

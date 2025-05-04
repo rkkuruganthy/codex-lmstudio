@@ -4,13 +4,11 @@
 │   ├── codex-old.js
 │   ├── codex.js
 │   └── setup.sh
+├── build.cjs
 ├── build.mjs
 ├── codex
 ├── codex-config.json
 ├── currentoutput.txt
-├── dist
-│   ├── cli.js
-│   └── cli.js.map
 ├── Dockerfile
 ├── examples
 │   ├── build-codex-demo
@@ -666,6 +664,16 @@
 │   │   │   ├── LICENSE
 │   │   │   ├── package.json
 │   │   │   └── README.md
+│   │   ├── gradient-string
+│   │   │   ├── index.d.ts
+│   │   │   ├── LICENSE
+│   │   │   ├── package.json
+│   │   │   └── README.md
+│   │   ├── ink-gradient
+│   │   │   ├── index.d.ts
+│   │   │   ├── LICENSE
+│   │   │   ├── package.json
+│   │   │   └── README.md
 │   │   ├── js-yaml
 │   │   │   ├── index.d.mts
 │   │   │   ├── index.d.ts
@@ -852,6 +860,11 @@
 │   │   │   │   └── valid.d.ts
 │   │   │   └── README.md
 │   │   ├── shell-quote
+│   │   │   ├── index.d.ts
+│   │   │   ├── LICENSE
+│   │   │   ├── package.json
+│   │   │   └── README.md
+│   │   ├── tinycolor2
 │   │   │   ├── index.d.ts
 │   │   │   ├── LICENSE
 │   │   │   ├── package.json
@@ -3153,6 +3166,86 @@
 │   │   ├── license
 │   │   ├── package.json
 │   │   └── readme.md
+│   ├── cfonts
+│   │   ├── bin
+│   │   │   └── index.js
+│   │   ├── fonts
+│   │   │   ├── 3d.json
+│   │   │   ├── block.json
+│   │   │   ├── chrome.json
+│   │   │   ├── console.json
+│   │   │   ├── grid.json
+│   │   │   ├── huge.json
+│   │   │   ├── pallet.json
+│   │   │   ├── shade.json
+│   │   │   ├── simple.json
+│   │   │   ├── simple3d.json
+│   │   │   ├── simpleBlock.json
+│   │   │   ├── slick.json
+│   │   │   └── tiny.json
+│   │   ├── lib
+│   │   │   ├── AddChar.d.ts
+│   │   │   ├── AddChar.js
+│   │   │   ├── AddLetterSpacing.d.ts
+│   │   │   ├── AddLetterSpacing.js
+│   │   │   ├── AddLine.d.ts
+│   │   │   ├── AddLine.js
+│   │   │   ├── AddShortcuts.d.ts
+│   │   │   ├── AddShortcuts.js
+│   │   │   ├── AlignText.d.ts
+│   │   │   ├── AlignText.js
+│   │   │   ├── CharLength.d.ts
+│   │   │   ├── CharLength.js
+│   │   │   ├── CheckInput.d.ts
+│   │   │   ├── CheckInput.js
+│   │   │   ├── CleanInput.d.ts
+│   │   │   ├── CleanInput.js
+│   │   │   ├── Color.d.ts
+│   │   │   ├── Color.js
+│   │   │   ├── Colorize.d.ts
+│   │   │   ├── Colorize.js
+│   │   │   ├── constants.d.ts
+│   │   │   ├── constants.js
+│   │   │   ├── Debugging.d.ts
+│   │   │   ├── Debugging.js
+│   │   │   ├── DisplayHelp.d.ts
+│   │   │   ├── DisplayHelp.js
+│   │   │   ├── DisplayVersion.d.ts
+│   │   │   ├── DisplayVersion.js
+│   │   │   ├── GetFirstCharacterPosition.d.ts
+│   │   │   ├── GetFirstCharacterPosition.js
+│   │   │   ├── GetFont.d.ts
+│   │   │   ├── GetFont.js
+│   │   │   ├── GetLongestLine.d.ts
+│   │   │   ├── GetLongestLine.js
+│   │   │   ├── Gradient.d.ts
+│   │   │   ├── Gradient.js
+│   │   │   ├── index.d.ts
+│   │   │   ├── index.js
+│   │   │   ├── Log.d.ts
+│   │   │   ├── Log.js
+│   │   │   ├── Options.d.ts
+│   │   │   ├── Options.js
+│   │   │   ├── ParseArgs.d.ts
+│   │   │   ├── ParseArgs.js
+│   │   │   ├── Render.d.ts
+│   │   │   ├── Render.js
+│   │   │   ├── Say.d.ts
+│   │   │   ├── Say.js
+│   │   │   ├── Size.d.ts
+│   │   │   ├── Size.js
+│   │   │   ├── UpperCaseFirst.d.ts
+│   │   │   └── UpperCaseFirst.js
+│   │   ├── LICENSE
+│   │   ├── node_modules
+│   │   │   └── supports-color
+│   │   │       ├── browser.js
+│   │   │       ├── index.js
+│   │   │       ├── license
+│   │   │       ├── package.json
+│   │   │       └── readme.md
+│   │   ├── package.json
+│   │   └── README.md
 │   ├── chai
 │   │   ├── chai.js
 │   │   ├── CODE_OF_CONDUCT.md
@@ -3607,6 +3700,11 @@
 │   │   └── readme.md
 │   ├── define-properties
 │   │   ├── CHANGELOG.md
+│   │   ├── index.js
+│   │   ├── LICENSE
+│   │   ├── package.json
+│   │   └── README.md
+│   ├── define-property
 │   │   ├── index.js
 │   │   ├── LICENSE
 │   │   ├── package.json
@@ -9490,6 +9588,27 @@
 │   │   ├── test
 │   │   │   └── index.js
 │   │   └── tsconfig.json
+│   ├── gradient-string
+│   │   ├── index.js
+│   │   ├── LICENSE
+│   │   ├── node_modules
+│   │   │   ├── ansi-styles
+│   │   │   │   ├── index.d.ts
+│   │   │   │   ├── index.js
+│   │   │   │   ├── license
+│   │   │   │   ├── package.json
+│   │   │   │   └── readme.md
+│   │   │   └── chalk
+│   │   │       ├── index.d.ts
+│   │   │       ├── license
+│   │   │       ├── package.json
+│   │   │       ├── readme.md
+│   │   │       └── source
+│   │   │           ├── index.js
+│   │   │           ├── templates.js
+│   │   │           └── util.js
+│   │   ├── package.json
+│   │   └── README.md
 │   ├── graphemer
 │   │   ├── CHANGELOG.md
 │   │   ├── lib
@@ -10186,6 +10305,21 @@
 │   │   ├── license
 │   │   ├── package.json
 │   │   └── readme.md
+│   ├── ink-big-text
+│   │   ├── dist
+│   │   │   ├── index.d.ts
+│   │   │   ├── index.js
+│   │   │   └── index.js.map
+│   │   ├── license
+│   │   ├── package.json
+│   │   └── readme.md
+│   ├── ink-gradient
+│   │   ├── dist
+│   │   │   ├── index.d.ts
+│   │   │   └── index.js
+│   │   ├── license
+│   │   ├── package.json
+│   │   └── readme.md
 │   ├── ink-spinner
 │   │   ├── build
 │   │   │   ├── index.d.ts
@@ -10407,6 +10541,14 @@
 │   │   ├── test
 │   │   │   └── index.js
 │   │   └── tsconfig.json
+│   ├── is-accessor-descriptor
+│   │   ├── CHANGELOG.md
+│   │   ├── index.js
+│   │   ├── LICENSE
+│   │   ├── package.json
+│   │   ├── README.md
+│   │   └── test
+│   │       └── index.js
 │   ├── is-array-buffer
 │   │   ├── CHANGELOG.md
 │   │   ├── index.d.ts
@@ -10448,6 +10590,13 @@
 │   │   ├── test
 │   │   │   └── index.js
 │   │   └── tsconfig.json
+│   ├── is-buffer
+│   │   ├── index.js
+│   │   ├── LICENSE
+│   │   ├── package.json
+│   │   ├── README.md
+│   │   └── test
+│   │       └── basic.js
 │   ├── is-callable
 │   │   ├── CHANGELOG.md
 │   │   ├── index.js
@@ -10459,6 +10608,14 @@
 │   ├── is-core-module
 │   │   ├── CHANGELOG.md
 │   │   ├── core.json
+│   │   ├── index.js
+│   │   ├── LICENSE
+│   │   ├── package.json
+│   │   ├── README.md
+│   │   └── test
+│   │       └── index.js
+│   ├── is-data-descriptor
+│   │   ├── CHANGELOG.md
 │   │   ├── index.js
 │   │   ├── LICENSE
 │   │   ├── package.json
@@ -10485,6 +10642,14 @@
 │   │   ├── test
 │   │   │   └── index.js
 │   │   └── tsconfig.json
+│   ├── is-descriptor
+│   │   ├── CHANGELOG.md
+│   │   ├── index.js
+│   │   ├── LICENSE
+│   │   ├── package.json
+│   │   ├── README.md
+│   │   └── test
+│   │       └── index.js
 │   ├── is-docker
 │   │   ├── cli.js
 │   │   ├── index.d.ts
@@ -10939,6 +11104,11 @@
 │   │   └── src
 │   │       ├── index.d.ts
 │   │       └── index.js
+│   ├── kind-of
+│   │   ├── index.js
+│   │   ├── LICENSE
+│   │   ├── package.json
+│   │   └── README.md
 │   ├── levn
 │   │   ├── lib
 │   │   │   ├── cast.js
@@ -13728,6 +13898,24 @@
 │   │   ├── LICENSE
 │   │   ├── package.json
 │   │   └── README.md
+│   ├── tinycolor2
+│   │   ├── cjs
+│   │   │   ├── package.json
+│   │   │   ├── test_template.js
+│   │   │   ├── test.js
+│   │   │   └── tinycolor.js
+│   │   ├── deno_asserts@0.168.0.mjs
+│   │   ├── dist
+│   │   │   └── tinycolor-min.js
+│   │   ├── esm
+│   │   │   ├── package.json
+│   │   │   ├── test_template.js
+│   │   │   ├── test.js
+│   │   │   └── tinycolor.js
+│   │   ├── LICENSE
+│   │   ├── package.json
+│   │   ├── README.md
+│   │   └── tinycolor.js
 │   ├── tinyexec
 │   │   ├── dist
 │   │   │   ├── main.cjs
@@ -13807,6 +13995,14 @@
 │   │   │       └── README.md
 │   │   ├── package.json
 │   │   └── README.md
+│   ├── tinygradient
+│   │   ├── browser.js
+│   │   ├── browser.js.map
+│   │   ├── index.js
+│   │   ├── LICENSE
+│   │   ├── package.json
+│   │   ├── README.md
+│   │   └── types.d.ts
 │   ├── tinypool
 │   │   ├── dist
 │   │   │   ├── chunk-6LX4VMOV.js
@@ -15275,6 +15471,19 @@
 │   │   ├── license
 │   │   ├── package.json
 │   │   └── readme.md
+│   ├── window-size
+│   │   ├── cli.js
+│   │   ├── index.js
+│   │   ├── LICENSE
+│   │   ├── node_modules
+│   │   │   └── is-number
+│   │   │       ├── index.js
+│   │   │       ├── LICENSE
+│   │   │       ├── package.json
+│   │   │       └── README.md
+│   │   ├── package.json
+│   │   ├── README.md
+│   │   └── utils.js
 │   ├── word-wrap
 │   │   ├── index.d.ts
 │   │   ├── index.js
@@ -15683,12 +15892,15 @@
 │       ├── compact-summary copy.ts
 │       ├── config copy.ts
 │       ├── config.ts
+│       ├── dependency-mapper.ts
+│       ├── ensureHistoryFileExists.ts
 │       ├── extract-applied-patches copy.ts
 │       ├── extract-applied-patches.ts
 │       ├── file-system-suggestions copy.ts
 │       ├── file-system-suggestions.ts
 │       ├── get-diff copy.ts
 │       ├── get-diff.ts
+│       ├── gherkin-generator.ts
 │       ├── input-utils copy.ts
 │       ├── input-utils.ts
 │       ├── logger
@@ -15706,6 +15918,7 @@
 │       ├── providers-old copy.ts
 │       ├── providers-old.ts
 │       ├── providers.ts
+│       ├── repo-loader.ts
 │       ├── responses copy.ts
 │       ├── responses.ts
 │       ├── session-old.ts
@@ -15812,4 +16025,4 @@
 ├── tsconfig.json
 └── vite.config.ts
 
-1405 directories, 14408 files
+1440 directories, 14586 files

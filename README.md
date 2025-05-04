@@ -28,7 +28,7 @@
   - `/history` – View prior prompt/responses
 - ⌨️ **Keyboard Shortcuts**:
   - `Enter` to send
-  - `Shift+Enter` to add a new line (for multi-line prompts)
+
 
 ---
 
@@ -37,22 +37,16 @@
 - 💾 **Session Caching**: Logs each prompt + response to `history/session-history.json`
 - 🧭 **/history View**: Lets users recall past interactions in structured format
 - 🧹 **/clear Resets All**: Clears input and history in a clean, error-free manner
-- 🔽 **Command Dropdown (WIP)**: Navigate predefined actions via arrow keys or mouse (coming soon)
 - 💡 **Improved Text Input**: Respects placeholder and newlines without breaking layout
 - 🧱 **Modular Utilities**:
   - `ensureHistoryFileExists.ts`
   - `getHistoryFilePath.ts`
+### ✅ Phase 3: Repo Context + Advanced Commands
 
----
-
-## 📦 Folder Structure
-
-codex-cli/ ├── bin/ │ └── codex-local.sh # CLI launcher script ├── src/ │ ├── components/ │ │ ├── codex-app.tsx # Top-level app container │ │ └── codex-chat.tsx # Core CLI interaction logic │ ├── utils/ │ │ ├── config.ts # Loads dynamic config │ │ ├── ensureHistoryFileExists.ts # History file bootstrap │ │ └── getHistoryFilePath.ts # Path resolution for history file │ └── cli-lmstudio.tsx # Main CLI entrypoint ├── history/ │ └── session-history.json # JSON log of user and assistant messages ├── codex-config.json # App-level defaults ├── package.json └── README.md
-
-yaml
-Copy
-Edit
-
+- 📂 **/repo <path>**: Loads a local or remote Git repo and extracts file context
+- 🔍 **/use <number>**: Select a specific file for focus from loaded context
+- 🧹 **/clear-history**: Clears only history, preserving context
+- ✨ **UI Restored**: Matches original design with fixed border rendering
 ---
 
 ## ⚙️ Prerequisites
@@ -66,6 +60,39 @@ Edit
 
 ## 🚀 Quick Setup
 
+### LinkedIn Content Analyzer
+
+The LinkedIn Content Analyzer is a Streamlit-based application that allows you to:
+
+1. Scrape LinkedIn posts for any user
+2. Store posts locally
+3. Ask questions about the stored content using LLM
+
+#### Setup Instructions
+
+1. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+2. Run the Streamlit app:
+```bash
+streamlit run src/app.py
+```
+
+#### Features
+
+- Scrape LinkedIn posts for any user
+- Store posts locally with timestamps
+- Ask questions about the stored content
+- Semantic search using vector embeddings
+- Clean web interface with Streamlit
+
+#### Usage
+
+TBD
+## 🚀 Quick Setup
+
 ### 1. Clone the Repository
 
 ```bash
@@ -73,9 +100,7 @@ git clone https://github.com/rkkuruganthy/codex-lmstudio.git
 cd codex-lmstudio
 npm install
 2. Build the CLI
-bash
-Copy
-Edit
+
 rm -rf dist
 esbuild src/cli-lmstudio.tsx \
   --bundle \
@@ -93,21 +118,13 @@ esbuild src/cli-lmstudio.tsx \
   --external:node:path \
   --sourcemap
 3. Create CLI Shortcut
-bash
-Copy
-Edit
+
 bash bin/setup.sh
 source ~/.zshrc   # or ~/.bashrc based on your shell
 Now just type:
-
-bash
-Copy
-Edit
 CodeAssist
 💬 How to Use
 Type your coding query or predefined command
-
-Use Shift+Enter to compose multi-line prompts
 
 Use /clear to reset the assistant
 
@@ -115,23 +132,12 @@ Use /history to view previous prompts and answers
 
 Example:
 
-bash
-Copy
-Edit
 > /generate-unit-tests
 
 > def is_prime(n): ...
 🔧 codex-config.json
 Customize default context here:
 
-json
-Copy
-Edit
-{
-  "defaultRepo": "https://github.com/rkkuruganthy/codex-lmstudio",
-  "defaultModel": "qwen2.5-coder-14b-instruct",
-  "defaultPath": "/Users/ravikuruganthy/myApps"
-}
 📜 Sample Commands
 Slash Command	Description
 /clear	Clears current input + history
