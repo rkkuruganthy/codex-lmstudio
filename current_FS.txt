@@ -10,6 +10,9 @@
 ├── codex-config.json
 ├── current_FS.txt
 ├── currentoutput.txt
+├── dist
+│   ├── cli.mjs
+│   └── cli.mjs.map
 ├── Dockerfile
 ├── examples
 │   ├── build-codex-demo
@@ -51,176 +54,6 @@
 ├── history-cache.json
 ├── HUSKY.md
 ├── ignore-react-devtools-plugin.js
-├── linkedin_analyzer
-│   ├── app.py
-│   ├── requirements.txt
-│   └── src
-│       ├── api.ts
-│       ├── approvals.ts
-│       ├── backup
-│       │   ├── agent
-│       │   │   ├── agent-loop.ts
-│       │   │   ├── apply-patch.ts
-│       │   │   ├── exec.ts
-│       │   │   ├── handle-exec-command.ts
-│       │   │   ├── parse-apply-patch.ts
-│       │   │   ├── platform-commands.ts
-│       │   │   ├── review.ts
-│       │   │   └── sandbox
-│       │   │       ├── create-truncating-collector.ts
-│       │   │       ├── interface.ts
-│       │   │       ├── macos-seatbelt.ts
-│       │   │       └── raw-exec.ts
-│       │   ├── app.tsx
-│       │   ├── chat
-│       │   │   ├── message-history.tsx
-│       │   │   ├── multiline-editor.tsx
-│       │   │   ├── terminal-chat-command-review.tsx
-│       │   │   ├── terminal-chat-completions.tsx
-│       │   │   ├── terminal-chat-input-thinking.tsx
-│       │   │   ├── terminal-chat-input.tsx
-│       │   │   ├── terminal-chat-new-input.tsx
-│       │   │   ├── terminal-chat-past-rollout.tsx
-│       │   │   ├── terminal-chat-response-item.tsx
-│       │   │   ├── terminal-chat-tool-call-command.tsx
-│       │   │   ├── terminal-chat.tsx
-│       │   │   ├── terminal-header.tsx
-│       │   │   ├── terminal-message-history.tsx
-│       │   │   └── use-message-grouping.ts
-│       │   ├── cli-singlepass.tsx
-│       │   ├── cli.tsx
-│       │   ├── compact-summary.ts
-│       │   ├── model-utils.ts
-│       │   └── singlepass-cli-app.tsx
-│       ├── cli-lmstudio.tsx
-│       ├── cli.tsx
-│       ├── components
-│       │   ├── approval-mode-overlay.tsx
-│       │   ├── banner.tsx
-│       │   ├── codex-app-old.tsx
-│       │   ├── codex-app.tsx
-│       │   ├── codex-chat.tsx
-│       │   ├── diff-overlay.tsx
-│       │   ├── help-overlay.tsx
-│       │   ├── history-overlay.tsx
-│       │   ├── model-overlay.tsx
-│       │   ├── onboarding
-│       │   │   └── onboarding-approval-mode.tsx
-│       │   ├── select-input
-│       │   │   ├── indicator.tsx
-│       │   │   ├── item.tsx
-│       │   │   └── select-input.tsx
-│       │   ├── typeahead-overlay.tsx
-│       │   └── vendor
-│       │       ├── cli-spinners
-│       │       │   └── index.js
-│       │       ├── ink-select
-│       │       │   ├── index.js
-│       │       │   ├── option-map.js
-│       │       │   ├── select-option.js
-│       │       │   ├── select.js
-│       │       │   ├── theme.js
-│       │       │   ├── use-select-state.js
-│       │       │   └── use-select.js
-│       │       ├── ink-spinner.tsx
-│       │       └── ink-text-input.tsx
-│       ├── dist
-│       │   ├── cli.js
-│       │   └── cli.js.map
-│       ├── format-command.ts
-│       ├── hooks
-│       │   ├── use-confirmation.ts
-│       │   └── use-terminal-size.ts
-│       ├── parse-apply-patch.ts
-│       ├── shims-external.d.ts
-│       ├── text-buffer.ts
-│       ├── typings.d.ts
-│       └── utils
-│           ├── agent copy
-│           │   ├── agent-loop.ts
-│           │   ├── apply-patch.ts
-│           │   ├── exec.ts
-│           │   ├── handle-exec-command.ts
-│           │   ├── parse-apply-patch.ts
-│           │   ├── platform-commands.ts
-│           │   ├── review.ts
-│           │   └── sandbox
-│           │       ├── create-truncating-collector.ts
-│           │       ├── interface.ts
-│           │       ├── macos-seatbelt.ts
-│           │       └── raw-exec.ts
-│           ├── approximate-tokens-used copy.ts
-│           ├── approximate-tokens-used.ts
-│           ├── auto-approval-mode copy.js
-│           ├── auto-approval-mode copy.ts
-│           ├── auto-approval-mode.js
-│           ├── auto-approval-mode.ts
-│           ├── bug-report copy.ts
-│           ├── bug-report.ts
-│           ├── check-in-git copy.ts
-│           ├── check-in-git.ts
-│           ├── check-updates copy.ts
-│           ├── check-updates.ts
-│           ├── compact-summary copy.ts
-│           ├── config copy.ts
-│           ├── config.ts
-│           ├── dependency-mapper.ts
-│           ├── ensureHistoryFileExists.ts
-│           ├── extract-applied-patches copy.ts
-│           ├── extract-applied-patches.ts
-│           ├── file-system-suggestions copy.ts
-│           ├── file-system-suggestions.ts
-│           ├── get-diff copy.ts
-│           ├── get-diff.ts
-│           ├── gherkin-generator.ts
-│           ├── input-utils copy.ts
-│           ├── input-utils.ts
-│           ├── logger
-│           │   └── log.ts
-│           ├── logger copy
-│           │   └── log.ts
-│           ├── model-info copy.ts
-│           ├── model-info.ts
-│           ├── model-utils copy.ts
-│           ├── package-manager-detector copy.ts
-│           ├── package-manager-detector.ts
-│           ├── parsers copy.ts
-│           ├── parsers.ts
-│           ├── providers copy.ts
-│           ├── providers-old copy.ts
-│           ├── providers-old.ts
-│           ├── providers.ts
-│           ├── repo-loader.ts
-│           ├── responses copy.ts
-│           ├── responses.ts
-│           ├── session-old.ts
-│           ├── session.ts
-│           ├── short-path copy.ts
-│           ├── short-path.ts
-│           ├── singlepass
-│           │   ├── code_diff.ts
-│           │   ├── context_files.ts
-│           │   ├── context_limit.ts
-│           │   ├── context.ts
-│           │   └── file_ops.ts
-│           ├── singlepass copy
-│           │   ├── code_diff.ts
-│           │   ├── context_files.ts
-│           │   ├── context_limit.ts
-│           │   ├── context.ts
-│           │   └── file_ops.ts
-│           ├── slash-commands copy.ts
-│           ├── slash-commands.ts
-│           ├── storage
-│           │   ├── command-history.ts
-│           │   └── save-rollout.ts
-│           ├── storage copy
-│           │   ├── command-history.ts
-│           │   └── save-rollout.ts
-│           ├── terminal copy.ts
-│           ├── terminal-chat-utils copy.ts
-│           ├── terminal-chat-utils.ts
-│           └── terminal.ts
 ├── node_modules
 │   ├── @alcalzone
 │   │   └── ansi-tokenize
@@ -15961,9 +15794,174 @@
 │   ├── init_firewall.sh
 │   └── run_in_container.sh
 ├── src
+│   ├── api.ts
+│   ├── approvals.ts
+│   ├── backup
+│   │   ├── agent
+│   │   │   ├── agent-loop.ts
+│   │   │   ├── apply-patch.ts
+│   │   │   ├── exec.ts
+│   │   │   ├── handle-exec-command.ts
+│   │   │   ├── parse-apply-patch.ts
+│   │   │   ├── platform-commands.ts
+│   │   │   ├── review.ts
+│   │   │   └── sandbox
+│   │   │       ├── create-truncating-collector.ts
+│   │   │       ├── interface.ts
+│   │   │       ├── macos-seatbelt.ts
+│   │   │       └── raw-exec.ts
+│   │   ├── app.tsx
+│   │   ├── chat
+│   │   │   ├── message-history.tsx
+│   │   │   ├── multiline-editor.tsx
+│   │   │   ├── terminal-chat-command-review.tsx
+│   │   │   ├── terminal-chat-completions.tsx
+│   │   │   ├── terminal-chat-input-thinking.tsx
+│   │   │   ├── terminal-chat-input.tsx
+│   │   │   ├── terminal-chat-new-input.tsx
+│   │   │   ├── terminal-chat-past-rollout.tsx
+│   │   │   ├── terminal-chat-response-item.tsx
+│   │   │   ├── terminal-chat-tool-call-command.tsx
+│   │   │   ├── terminal-chat.tsx
+│   │   │   ├── terminal-header.tsx
+│   │   │   ├── terminal-message-history.tsx
+│   │   │   └── use-message-grouping.ts
+│   │   ├── cli-singlepass.tsx
+│   │   ├── cli.tsx
+│   │   ├── compact-summary.ts
+│   │   ├── model-utils.ts
+│   │   └── singlepass-cli-app.tsx
+│   ├── cli-lmstudio.tsx
 │   ├── cli.tsx
-│   └── components
-│       └── codex-chat.tsx
+│   ├── components
+│   │   ├── approval-mode-overlay.tsx
+│   │   ├── banner.tsx
+│   │   ├── codex-app-old.tsx
+│   │   ├── codex-app.tsx
+│   │   ├── codex-chat.tsx
+│   │   ├── diff-overlay.tsx
+│   │   ├── help-overlay.tsx
+│   │   ├── history-overlay.tsx
+│   │   ├── model-overlay.tsx
+│   │   ├── onboarding
+│   │   │   └── onboarding-approval-mode.tsx
+│   │   ├── select-input
+│   │   │   ├── indicator.tsx
+│   │   │   ├── item.tsx
+│   │   │   └── select-input.tsx
+│   │   ├── typeahead-overlay.tsx
+│   │   └── vendor
+│   │       ├── cli-spinners
+│   │       │   └── index.js
+│   │       ├── ink-select
+│   │       │   ├── index.js
+│   │       │   ├── option-map.js
+│   │       │   ├── select-option.js
+│   │       │   ├── select.js
+│   │       │   ├── theme.js
+│   │       │   ├── use-select-state.js
+│   │       │   └── use-select.js
+│   │       ├── ink-spinner.tsx
+│   │       └── ink-text-input.tsx
+│   ├── components-del
+│   │   └── codex-chat-del.tsx
+│   ├── dist
+│   │   ├── cli.js
+│   │   └── cli.js.map
+│   ├── format-command.ts
+│   ├── hooks
+│   │   ├── use-confirmation.ts
+│   │   └── use-terminal-size.ts
+│   ├── parse-apply-patch.ts
+│   ├── shims-external.d.ts
+│   ├── text-buffer.ts
+│   ├── typings.d.ts
+│   └── utils
+│       ├── agent copy
+│       │   ├── agent-loop.ts
+│       │   ├── apply-patch.ts
+│       │   ├── exec.ts
+│       │   ├── handle-exec-command.ts
+│       │   ├── parse-apply-patch.ts
+│       │   ├── platform-commands.ts
+│       │   ├── review.ts
+│       │   └── sandbox
+│       │       ├── create-truncating-collector.ts
+│       │       ├── interface.ts
+│       │       ├── macos-seatbelt.ts
+│       │       └── raw-exec.ts
+│       ├── approximate-tokens-used copy.ts
+│       ├── approximate-tokens-used.ts
+│       ├── auto-approval-mode copy.js
+│       ├── auto-approval-mode copy.ts
+│       ├── auto-approval-mode.js
+│       ├── auto-approval-mode.ts
+│       ├── bug-report copy.ts
+│       ├── bug-report.ts
+│       ├── check-in-git copy.ts
+│       ├── check-in-git.ts
+│       ├── check-updates copy.ts
+│       ├── check-updates.ts
+│       ├── compact-summary copy.ts
+│       ├── config copy.ts
+│       ├── config.ts
+│       ├── dependency-mapper.ts
+│       ├── ensureHistoryFileExists.ts
+│       ├── extract-applied-patches copy.ts
+│       ├── extract-applied-patches.ts
+│       ├── file-system-suggestions copy.ts
+│       ├── file-system-suggestions.ts
+│       ├── get-diff copy.ts
+│       ├── get-diff.ts
+│       ├── gherkin-generator.ts
+│       ├── input-utils copy.ts
+│       ├── input-utils.ts
+│       ├── logger
+│       │   └── log.ts
+│       ├── logger copy
+│       │   └── log.ts
+│       ├── model-info copy.ts
+│       ├── model-info.ts
+│       ├── model-utils copy.ts
+│       ├── package-manager-detector copy.ts
+│       ├── package-manager-detector.ts
+│       ├── parsers copy.ts
+│       ├── parsers.ts
+│       ├── providers copy.ts
+│       ├── providers-old copy.ts
+│       ├── providers-old.ts
+│       ├── providers.ts
+│       ├── repo-loader.ts
+│       ├── responses copy.ts
+│       ├── responses.ts
+│       ├── session-old.ts
+│       ├── session.ts
+│       ├── short-path copy.ts
+│       ├── short-path.ts
+│       ├── singlepass
+│       │   ├── code_diff.ts
+│       │   ├── context_files.ts
+│       │   ├── context_limit.ts
+│       │   ├── context.ts
+│       │   └── file_ops.ts
+│       ├── singlepass copy
+│       │   ├── code_diff.ts
+│       │   ├── context_files.ts
+│       │   ├── context_limit.ts
+│       │   ├── context.ts
+│       │   └── file_ops.ts
+│       ├── slash-commands copy.ts
+│       ├── slash-commands.ts
+│       ├── storage
+│       │   ├── command-history.ts
+│       │   └── save-rollout.ts
+│       ├── storage copy
+│       │   ├── command-history.ts
+│       │   └── save-rollout.ts
+│       ├── terminal copy.ts
+│       ├── terminal-chat-utils copy.ts
+│       ├── terminal-chat-utils.ts
+│       └── terminal.ts
 ├── tests
 │   ├── __fixtures__
 │   │   ├── a.txt
@@ -16040,4 +16038,4 @@
 ├── tsconfig.json
 └── vite.config.ts
 
-1445 directories, 14596 files
+1444 directories, 14595 files

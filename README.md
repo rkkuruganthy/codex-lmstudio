@@ -1,157 +1,111 @@
-# 🚀 CodeAssist – Local Coding Assistant CLI
+# 💻 CodeAssist CLI
 
-**CodeAssist** is a powerful, fully local coding assistant built with ❤️ using **LMStudio** and open-source models like **Qwen2.5 Coder**. Designed for speed, privacy, and flexibility, it requires no external APIs, making it ideal for enterprise and offline development environments.
-
-> 🎯 **Mission**: Deliver a world-class, locally executable AI assistant that boosts developer productivity while maintaining full control over code and data.
+> Powered by LMStudio + Qwen2.5 | Built by Ravi Kuruganthy
 
 ---
 
-## ✨ Highlights
-
-### ✅ Built-in Phase 1 Capabilities
-
-- ⚡ **100% Local**: All interactions run against locally hosted LLMs in LMStudio (no OpenAI API needed)
-- 🧠 **Intelligent Assistant**: Responds to natural language queries with full multi-turn chat support
-- 🗂️ **Contextual Awareness**: Reads default repo/model/path from a local `codex-config.json`
-- 📌 **Predefined Prompts**:
-  - Generate unit tests
-  - Review my code
-  - Optimize this algorithm
-  - Suggest improvements
-  - Explain this code
-  - Write documentation
-  - Find security vulnerabilities
-  - Summarize the code
-- ⏱️ **Feedback Metrics**: Displays token usage and response time
-- 🧹 **Slash Commands**:
-  - `/clear` – Reset the conversation
-  - `/history` – View prior prompt/responses
-- ⌨️ **Keyboard Shortcuts**:
-  - `Enter` to send
-
+## 📦 Overview
+CodeAssist CLI is a local, intelligent coding assistant that:
+- Runs completely offline using LMStudio
+- Loads and understands full Git repositories
+- Generates tests, documentation, Gherkin specs, and more
+- Offers autocomplete for files based on repo context
 
 ---
 
-### ✅ Phase 2: Productivity & Persistence Features
-
-- 💾 **Session Caching**: Logs each prompt + response to `history/session-history.json`
-- 🧭 **/history View**: Lets users recall past interactions in structured format
-- 🧹 **/clear Resets All**: Clears input and history in a clean, error-free manner
-- 💡 **Improved Text Input**: Respects placeholder and newlines without breaking layout
-- 🧱 **Modular Utilities**:
-  - `ensureHistoryFileExists.ts`
-  - `getHistoryFilePath.ts`
-### ✅ Phase 3: Repo Context + Advanced Commands
-
-- 📂 **/repo <path>**: Loads a local or remote Git repo and extracts file context
-- 🔍 **/use <number>**: Select a specific file for focus from loaded context
-- 🧹 **/clear-history**: Clears only history, preserving context
-- ✨ **UI Restored**: Matches original design with fixed border rendering
----
-
-## ⚙️ Prerequisites
-
-- ✅ Node.js ≥ 20.x
-- ✅ `esbuild` (globally installed): `npm install -g esbuild`
-- ✅ LMStudio running locally at `http://localhost:1234`
-- ✅ Local model downloaded (e.g., Qwen2.5 Coder GGUF)
-
----
-
-## 🚀 Quick Setup
-
-### LinkedIn Content Analyzer
-
-The LinkedIn Content Analyzer is a Streamlit-based application that allows you to:
-
-1. Scrape LinkedIn posts for any user
-2. Store posts locally
-3. Ask questions about the stored content using LLM
-
-#### Setup Instructions
-
-1. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-2. Run the Streamlit app:
-```bash
-streamlit run src/app.py
-```
-
-#### Features
-
-- Scrape LinkedIn posts for any user
-- Store posts locally with timestamps
-- Ask questions about the stored content
-- Semantic search using vector embeddings
-- Clean web interface with Streamlit
-
-#### Usage
-
-TBD
-## 🚀 Quick Setup
-
-### 1. Clone the Repository
+## 🛠️ Setup
 
 ```bash
-git clone https://github.com/rkkuruganthy/codex-lmstudio.git
-cd codex-lmstudio
 npm install
-2. Build the CLI
+npm run build
+node dist/cli.mjs
+```
 
-rm -rf dist
-esbuild src/cli-lmstudio.tsx \
-  --bundle \
-  --platform=node \
-  --format=esm \
-  --outfile=dist/cli.js \
-  --external:react \
-  --external:ink \
-  --external:dotenv \
-  --external:chalk \
-  --external:node-fetch \
-  --external:commander \
-  --external:node:events \
-  --external:node:fs \
-  --external:node:path \
-  --sourcemap
-3. Create CLI Shortcut
+Make sure LMStudio is running and serving an LLM like `Qwen2.5-Coder-GGUF`.
 
-bash bin/setup.sh
-source ~/.zshrc   # or ~/.bashrc based on your shell
-Now just type:
-CodeAssist
-💬 How to Use
-Type your coding query or predefined command
+---
 
-Use /clear to reset the assistant
+## 🚀 Phase 3: Intelligent Repo-Aware Commands
 
-Use /history to view previous prompts and answers
+### 📁 `/repo <path|url>`
+- Load a local folder or GitHub repo (`.git`-cloned or via URL).
+- Automatically scans the entire codebase and builds a context.
+- File names are cached for suggestion and retrieval.
+- Context is stored in `.repo-context.json` and `.repo-cache.json`.
 
-Example:
+```bash
+/repo ./my-local-repo
+/repo https://github.com/user/project
+```
 
-> /generate-unit-tests
+---
 
-> def is_prime(n): ...
-🔧 codex-config.json
-Customize default context here:
+### 🤖 Context-Aware Commands
 
-📜 Sample Commands
-Slash Command	Description
-/clear	Clears current input + history
-/history	View logged prompt/response entries
-/summarize	Summarize current conversation
-/generate-unit-tests	Trigger unit test generation
+Commands like `/summarize`, `/generate`, `/gherkin`, and `/review` support:
 
-🧠 Built For
-Local-first AI development
+| Feature                         | Description                                                                 |
+|---------------------------------|-----------------------------------------------------------------------------|
+| ✅ Optional filename            | `/generate unit tests auth.service.ts`                                     |
+| ✅ Fallback to full-repo       | `/summarize` (summarizes the whole repo if no file is given)               |
+| ✅ Live autocomplete           | As you type filenames, suggestions appear (up to 5 matches)                |
+| ✅ Auto context injection       | Injects matched content into the prompt before calling the LLM             |
 
-Engineers working in secure environments
+---
 
-AI productivity without vendor lock-in
+### 🧠 Session Memory & Prompt History
 
-👨‍💻 Author
-Developed by Ravi Kuruganthy
-Built with a vision to empower modern developers with world-class local GenAI to
+| Command            | Description                            |
+|--------------------|----------------------------------------|
+| `/history`         | View past prompts with index numbers   |
+| `/load 3`          | Reload the 3rd prompt/response pair     |
+| `/clear`           | Clear the current assistant response    |
+| `/clear-history`   | Clear all historical interactions       |
+
+---
+
+## 🎥 Demo Suggestions (GIFs)
+
+Embed demo `.gif` or `.webm` showing:
+
+#### 🔹 1. Loading a repo
+```bash
+/repo https://github.com/user/microservice-demo
+```
+
+#### 🔹 2. Using smart autocomplete
+```bash
+/generate unit tests auth
+# shows suggestions like:
+# - authService.ts
+# - authController.ts
+```
+
+#### 🔹 3. Summarizing full repo
+```bash
+/summarize
+```
+
+#### 🔹 4. History & recall
+```bash
+/history
+/load 2
+```
+
+**Embed Example**:
+```markdown
+![CodeAssist CLI Demo](docs/demo-repo-context.gif)
+```
+
+---
+
+## 📌 Coming Soon
+- 🧠 Token budgeting & chunked summarization
+- 🧪 Linting + static analysis commands
+- 🗂️ Multi-repo memory slots
+- 📈 CLI metrics panel (speed + token count)
+
+---
+
+## 👨‍💻 Author
+**Ravi Kuruganthy** — Executive Director, JPMorgan Chase | 6x GenAI Patents | Platform Engineering Lead

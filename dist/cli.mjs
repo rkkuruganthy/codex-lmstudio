@@ -6889,10 +6889,6 @@ function Spinner({ type = "dots" }) {
 }
 var build_default2 = Spinner;
 
-// src/components/codex-chat.tsx
-import fs3 from "fs";
-import path3 from "path";
-
 // node_modules/node-fetch/src/index.js
 init_require_shim();
 import http2 from "node:http";
@@ -8191,6 +8187,11 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
   });
 }
 
+// src/components/codex-chat.tsx
+import fs3 from "fs";
+import path2 from "path";
+import { execSync } from "child_process";
+
 // src/utils/ensureHistoryFileExists.ts
 init_require_shim();
 import fs2 from "fs";
@@ -8205,159 +8206,174 @@ function ensureHistoryFileExists(filePath) {
     fs2.writeFileSync(filePath, JSON.stringify([]));
   }
 }
-function loadHistoryCache() {
-  const historyFile = getHistoryFilePath();
-  try {
-    if (!fs2.existsSync(historyFile)) {
-      fs2.writeFileSync(historyFile, JSON.stringify([]));
-    }
-    const data = fs2.readFileSync(historyFile, "utf-8");
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (err) {
-    console.error("Failed to read history cache:", err);
-    return [];
-  }
-}
-
-// src/utils/repo-loader.ts
-init_require_shim();
-import path2 from "path";
-
-// src/utils/config.ts
-init_require_shim();
-var finalConfig = {
-  apiBaseUrl: "http://localhost:1234/v1",
-  // LM Studio local server
-  apiKey: "sk-local",
-  // Dummy key used by LM Studio
-  defaultRepo: "https://github.com/rkkuruganthy/codex-lmstudio",
-  defaultModel: "qwen2.5-coder-14b-instruct",
-  defaultPath: "/Users/ravikuruganthy/myApps"
-};
-
-// src/utils/repo-loader.ts
-function updateContextFromRepo(repoPath) {
-  try {
-    const absolutePath = path2.resolve(repoPath);
-    finalConfig.defaultRepo = path2.basename(absolutePath);
-    finalConfig.defaultPath = absolutePath;
-    console.log(`\u{1F4C1} Repo context updated: ${finalConfig.defaultRepo} (${finalConfig.defaultPath})`);
-  } catch (err) {
-    console.error("Failed to update repo context:", err);
-  }
-}
 
 // src/components/codex-chat.tsx
 import { jsx, jsxs } from "react/jsx-runtime";
-var CodexChat = ({
-  initialPrompt,
-  model,
-  predefinedPrompts = [],
-  config
-}) => {
-  const [input, setInput] = useState3(initialPrompt || "");
-  const [messages, setMessages] = useState3([
-    {
-      role: "system",
-      content: "You are a helpful coding assistant."
+function generateRepoContext(repoPath, contextFile) {
+  const files = [];
+  const walk = (dir) => {
+    const entries = fs3.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path2.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(fullPath);
+      } else if (entry.isFile()) {
+        const content = fs3.readFileSync(fullPath, "utf-8").slice(0, 5e3);
+        files.push({ path: fullPath.replace(repoPath + "/", ""), content });
+      }
     }
-  ]);
+  };
+  walk(repoPath);
+  fs3.writeFileSync(contextFile, JSON.stringify(files, null, 2));
+  return files;
+}
+var CodexChat = ({ initialPrompt, model, predefinedPrompts = [], config }) => {
+  const [input, setInput] = useState3(initialPrompt || "");
+  const [messages, setMessages] = useState3([{ role: "system", content: "You are a helpful coding assistant." }]);
   const [thinking, setThinking] = useState3(false);
   const [response, setResponse] = useState3("");
   const [tokensUsed, setTokensUsed] = useState3(null);
   const [timeTaken, setTimeTaken] = useState3(null);
-  const [history, setHistory] = useState3([]);
+  const [repoFiles, setRepoFiles] = useState3(() => {
+    try {
+      const cached = fs3.readFileSync(".repo-cache.json", "utf-8");
+      const { paths } = JSON.parse(cached);
+      return paths || [];
+    } catch {
+      return [];
+    }
+  });
+  const [suggestions, setSuggestions] = useState3([]);
+  const historyFilePath = getHistoryFilePath();
   useEffect3(() => {
-    const history2 = loadHistoryCache();
-    setHistory(history2);
+    ensureHistoryFileExists(historyFilePath);
   }, []);
+  useEffect3(() => {
+    const parts = input.trim().split(" ");
+    if (parts.length >= 2 && ["/summarize", "/generate", "/gherkin", "/review"].includes(parts[0])) {
+      const partial = parts.slice(1).join(" ").toLowerCase();
+      const filtered = repoFiles.filter((f3) => f3.toLowerCase().includes(partial));
+      setSuggestions(filtered.slice(0, 5));
+    } else {
+      setSuggestions([]);
+    }
+  }, [input, repoFiles]);
   const handleSubmit = async () => {
     const trimmedInput = input.trim();
     if (!trimmedInput) return;
-    const historyFilePath = getHistoryFilePath();
-    await ensureHistoryFileExists(historyFilePath);
     if (trimmedInput === "/clear") {
       setResponse("");
       setInput("");
       return;
     }
-    if (trimmedInput === "/clear history") {
+    if (trimmedInput === "/clear-history") {
       fs3.writeFileSync(historyFilePath, JSON.stringify([]));
-      setHistory([]);
-      setResponse("\u{1F9F9} History cleared.");
       setInput("");
       return;
     }
     if (trimmedInput === "/history") {
-      const history2 = loadHistoryCache();
-      const historyOutput = history2.length ? `\u{1F553} ${history2.length} items in history:
-` + history2.map((entry, i2) => `${i2 + 1}. ${entry.prompt}`).join("\n") + "\n\nType `/recall <number>` to view that entry." : "No history yet.";
-      setResponse(historyOutput);
+      try {
+        const history = JSON.parse(fs3.readFileSync(historyFilePath, "utf-8"));
+        const output = history.length ? `\u{1F4DC} Prompt History (${history.length} items):
+` + history.map((h2, i2) => `${i2 + 1}. ${h2.prompt}`).join("\n") + "\n\n\u{1F522} Type `/load <number>` to reload that entry." : "No history yet.";
+        setResponse(output);
+      } catch (e2) {
+        setResponse("Failed to load history.");
+      }
       setInput("");
       return;
     }
-    if (/^\/recall\s+\d+/.test(trimmedInput)) {
-      const index = parseInt(trimmedInput.replace("/recall", "").trim(), 10) - 1;
-      if (isNaN(index) || index < 0 || index >= history.length) {
-        setResponse("\u274C Invalid history item number.");
-        setInput("");
-        return;
-      }
-      const entry = history[index];
-      setResponse(`\u{1F9E0} Recalled Prompt:
+    if (trimmedInput.startsWith("/load ")) {
+      const index = parseInt(trimmedInput.split(" ")[1]);
+      const history = JSON.parse(fs3.readFileSync(historyFilePath, "utf-8"));
+      const entry = history[index - 1];
+      if (entry) {
+        setResponse(`\u{1F9E0} Recalled Prompt:
 ${entry.prompt}
 
 \u{1F4AC} Response:
 ${entry.response}`);
+      } else {
+        setResponse("\u274C Invalid history entry.");
+      }
       setInput("");
       return;
     }
     if (trimmedInput.startsWith("/repo ")) {
-      const repoPath = trimmedInput.replace("/repo ", "").trim();
-      updateContextFromRepo(repoPath);
-      config.defaultRepo = repoPath;
-      config.defaultPath = repoPath;
-      setInput("");
-      setResponse(`\u{1F4C1} Repo path updated to ${repoPath}
-\u{1F504} Context is now active and will be used for all /commands and prompts.`);
-      return;
-    }
-    let userContent = trimmedInput;
-    if (config?.defaultRepo) {
-      const repoContextPath = path3.join(config.defaultRepo, ".repo-context.json");
+      const repoPathInput = trimmedInput.replace("/repo ", "").trim();
+      let repoPath = repoPathInput;
       try {
-        const repoFiles = JSON.parse(fs3.readFileSync(repoContextPath, "utf-8"));
-        const match = trimmedInput.match(/^\/(gherkin|summarize|review)\s+(.+)/i);
-        if (match) {
-          const [, command, filename] = match;
-          const matchedFile = repoFiles.find((f3) => f3.path.endsWith(filename.trim()));
-          if (!matchedFile) {
-            setResponse(`\u274C File "${filename}" not found in repo context. Please provide a valid filename.`);
-            setInput("");
-            return;
-          }
-          userContent = `Here is the content of ${matchedFile.path} from the repo:
-
-${matchedFile.content.slice(0, 3e3)}
-
-Now: ${command} the code.`;
+        if (repoPathInput.startsWith("http")) {
+          const tmpPath = `/tmp/codeassist-repo-${Date.now()}`;
+          execSync(`git clone ${repoPathInput} ${tmpPath}`);
+          repoPath = tmpPath;
+        } else if (!fs3.existsSync(repoPathInput)) {
+          throw new Error("Local path does not exist.");
         }
-      } catch (e2) {
-        console.warn("\u26A0\uFE0F Repo context missing or failed to load:", e2.message);
+        const contextFile = path2.join(repoPath, ".repo-context.json");
+        const fileData = generateRepoContext(repoPath, contextFile);
+        const paths = fileData.map((f3) => f3.path);
+        setRepoFiles(paths);
+        fs3.writeFileSync(".repo-cache.json", JSON.stringify({ paths }, null, 2));
+        config.defaultRepo = repoPath;
+        config.defaultPath = repoPath;
+        setResponse(`\u{1F4C1} Repo path updated to ${repoPath}
+\u{1F4CE} Context loaded with ${fileData.length} files.
+\u2705 You can now use commands like /gherkin, /summarize, /generate etc., and they will use this repo context.`);
+        setInput("");
+        return;
+      } catch (err) {
+        setResponse(`\u274C Failed to set repo context: ${err.message}`);
+        setInput("");
+        return;
       }
     }
+    let newMessages;
+    if (["/summarize", "/gherkin", "/review", "/generate"].some((cmd) => trimmedInput.startsWith(cmd))) {
+      const command = trimmedInput.split(" ")[0];
+      const fileArg = trimmedInput.replace(command, "").trim();
+      const contextFile = path2.join(config.defaultRepo, ".repo-context.json");
+      const contextData = JSON.parse(fs3.readFileSync(contextFile, "utf-8"));
+      if (!fileArg) {
+        const joinedContent = contextData.map((f3) => `File: ${f3.path}
+
+${f3.content}`).join("\n\n");
+        newMessages = [...messages, {
+          role: "user",
+          content: `Please ${command.slice(1)} the entire repository including all components and interactions.
+
+${joinedContent}`
+        }];
+      } else {
+        const match = contextData.find((f3) => f3.path.toLowerCase().includes(fileArg.toLowerCase()));
+        if (match) {
+          newMessages = [...messages, {
+            role: "user",
+            content: `Please ${command.slice(1)} the following file: ${match.path}
+
+${match.content}`
+          }];
+        } else {
+          setResponse(`\u274C File not found for ${command.slice(1)}: ${fileArg}`);
+          setInput("");
+          return;
+        }
+      }
+    } else {
+      newMessages = [...messages, { role: "user", content: input }];
+    }
+    setMessages(newMessages);
     setThinking(true);
     setInput("");
     const start = Date.now();
-    const newMessages = [...messages, { role: "user", content: userContent }];
-    setMessages(newMessages);
+    const apiUrl = config.apiBaseUrl || "http://localhost:1234/v1";
+    const apiKey = config.apiKey || "sk-local";
     try {
-      const res = await fetch(`${config.apiBaseUrl}/chat/completions`, {
+      const res = await fetch(`${apiUrl}/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${config.apiKey}`
+          Authorization: `Bearer ${apiKey}`
         },
         body: JSON.stringify({
           model,
@@ -8376,13 +8392,13 @@ Now: ${command} the code.`;
       setMessages((prev) => [...prev, { role: "assistant", content: assistantReply }]);
       setTokensUsed(tokens);
       setTimeTaken(Math.round((end - start) / 1e3));
-      const updatedHistory = [...history, { prompt: trimmedInput, response: assistantReply }];
-      setHistory(updatedHistory);
-      fs3.writeFileSync(historyFilePath, JSON.stringify(updatedHistory, null, 2));
+      const history = JSON.parse(fs3.readFileSync(historyFilePath, "utf-8"));
+      history.push({ prompt: trimmedInput, response: assistantReply });
+      fs3.writeFileSync(historyFilePath, JSON.stringify(history, null, 2));
     } catch (error) {
       setThinking(false);
       console.error("\u{1F6A8} Error:", error);
-      setResponse("\u274C Error: Failed to get response from LMStudio. Check if LM Studio is running and reachable.");
+      setResponse("\u274C Failed to get response from LMStudio. Check if LMStudio is running and reachable.");
     }
   };
   return /* @__PURE__ */ jsxs(Box, { flexDirection: "column", padding: 1, width: "80%", children: [
@@ -8390,22 +8406,21 @@ Now: ${command} the code.`;
       /* @__PURE__ */ jsx(Text3, { color: "cyanBright", children: "\u{1F680} CodeAssist CLI (by Ravi)" }),
       /* @__PURE__ */ jsx(Text3, { color: "green", children: "Built with \u2764\uFE0F LMStudio + Qwen2.5" })
     ] }),
-    /* @__PURE__ */ jsxs(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "round", borderColor: "yellow", width: "80%", padding: 1, alignSelf: "center", children: [
+    /* @__PURE__ */ jsxs(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "classic", borderColor: "yellow", width: "80%", padding: 1, alignSelf: "center", children: [
       /* @__PURE__ */ jsxs(Text3, { children: [
         "\u{1F4E6} Default Repo: ",
         config?.defaultRepo || "N/A"
       ] }),
       /* @__PURE__ */ jsxs(Text3, { children: [
         "\u{1F6E0}\uFE0F Model: ",
-        model || config?.defaultModel || "N/A"
+        model
       ] }),
       /* @__PURE__ */ jsxs(Text3, { children: [
         "\u{1F4C2} Path: ",
         config?.defaultPath || "N/A"
-      ] }),
-      /* @__PURE__ */ jsx(Text3, { color: "cyanBright", children: "\u{1F4CE} Context will be used for all /commands and prompts this session" })
+      ] })
     ] }),
-    Array.isArray(predefinedPrompts) && predefinedPrompts.length > 0 && /* @__PURE__ */ jsxs(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "round", borderColor: "magenta", width: "80%", padding: 1, alignSelf: "center", children: [
+    Array.isArray(predefinedPrompts) && predefinedPrompts.length > 0 && /* @__PURE__ */ jsxs(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "classic", borderColor: "magenta", width: "80%", padding: 1, alignSelf: "center", children: [
       /* @__PURE__ */ jsx(Text3, { color: "magentaBright", children: "\u{1F9E0} Predefined Prompts:" }),
       predefinedPrompts.map((prompt, idx) => /* @__PURE__ */ jsxs(Text3, { color: "yellow", children: [
         "- ",
@@ -8424,27 +8439,24 @@ Now: ${command} the code.`;
       ] })
     ] }),
     !thinking && /* @__PURE__ */ jsxs(Box, { flexDirection: "column", width: "80%", alignSelf: "center", marginTop: 1, children: [
-      /* @__PURE__ */ jsx(Box, { borderStyle: "round", borderColor: "blue", paddingX: 1, children: /* @__PURE__ */ jsx(
-        build_default,
-        {
-          value: input,
-          onChange: setInput,
-          onSubmit: handleSubmit,
-          placeholder: "Type your question here",
-          focus: true
-        }
-      ) }),
+      /* @__PURE__ */ jsx(Box, { borderStyle: "round", borderColor: "blue", paddingX: 1, children: /* @__PURE__ */ jsx(build_default, { value: input, onChange: setInput, onSubmit: handleSubmit, placeholder: "Type your question here", focus: true }) }),
+      suggestions.length > 0 && /* @__PURE__ */ jsxs(Box, { flexDirection: "column", paddingLeft: 2, children: [
+        /* @__PURE__ */ jsx(Text3, { color: "gray", children: "Suggestions:" }),
+        suggestions.map((file, i2) => /* @__PURE__ */ jsx(Text3, { color: "blue", children: file }, i2))
+      ] }),
       /* @__PURE__ */ jsx(Box, { marginTop: 1, children: /* @__PURE__ */ jsxs(Text3, { children: [
         "Press ",
         /* @__PURE__ */ jsx(Text3, { color: "green", children: "Enter" }),
         " to send | ",
+        /* @__PURE__ */ jsx(Text3, { color: "red", children: "/repo" }),
+        ", ",
         /* @__PURE__ */ jsx(Text3, { color: "red", children: "/history" }),
         ", ",
-        /* @__PURE__ */ jsx(Text3, { color: "red", children: "/recall" }),
+        /* @__PURE__ */ jsx(Text3, { color: "red", children: "/load" }),
         ", ",
         /* @__PURE__ */ jsx(Text3, { color: "red", children: "/clear" }),
         ", ",
-        /* @__PURE__ */ jsx(Text3, { color: "red", children: "/clear history" })
+        /* @__PURE__ */ jsx(Text3, { color: "red", children: "/clear-history" })
       ] }) })
     ] }),
     thinking && /* @__PURE__ */ jsx(Box, { marginTop: 1, children: /* @__PURE__ */ jsxs(Text3, { color: "green", children: [
@@ -8452,6 +8464,18 @@ Now: ${command} the code.`;
       " Thinking..."
     ] }) })
   ] });
+};
+
+// src/utils/config.ts
+init_require_shim();
+var finalConfig = {
+  apiBaseUrl: "http://localhost:1234/v1",
+  // LM Studio local server
+  apiKey: "sk-local",
+  // Dummy key used by LM Studio
+  defaultRepo: "https://github.com/rkkuruganthy/codex-lmstudio",
+  defaultModel: "qwen2.5-coder-14b-instruct",
+  defaultPath: "/Users/ravikuruganthy/myApps"
 };
 
 // src/cli.tsx
