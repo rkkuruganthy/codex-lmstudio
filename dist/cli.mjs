@@ -8207,8 +8207,170 @@ function ensureHistoryFileExists(filePath) {
   }
 }
 
+// src/prompts/promptCatalog.ts
+init_require_shim();
+var promptCatalog = {
+  gherkin: {
+    title: "Generate Gherkin Scenarios",
+    description: "Convert code logic into Gherkin-style acceptance tests.",
+    template: `You are an expert Software Quality Engineer and Business Analyst.
+
+Your task is to analyze the provided code (or function) and generate **Gherkin-style acceptance criteria** that clearly describe the functional behavior **from the user's perspective**.
+
+\u{1F4CC} Rules:
+1. Use the **Given / When / Then** syntax.
+2. Include **preconditions (Given)**, **user actions (When)**, and **expected outcomes (Then)**.
+3. Use **non-technical**, domain-specific language understandable by Product Owners, QA Analysts, and Automation Engineers.
+4. Focus on **observable, testable behavior**, not implementation or code details.
+
+---
+<INSERT_FILE_NAME_AND_CONTENT_HERE>
+`
+  },
+  review: {
+    title: "Code Review",
+    description: "Review the code for quality, maintainability, and style.",
+    template: `You are a senior software engineer. Review the following code for quality, maintainability, and style. Suggest improvements.
+
+---
+<INSERT_FILE_NAME_AND_CONTENT_HERE>
+`
+  },
+  optimize: {
+    title: "Optimize Code",
+    description: "Optimize the code for performance and readability.",
+    template: `You are a performance expert. Optimize the following code for efficiency and readability. Explain your changes.
+
+---
+<INSERT_FILE_NAME_AND_CONTENT_HERE>
+`
+  },
+  suggest: {
+    title: "Suggest Improvements",
+    description: "Suggest improvements or refactoring for the code.",
+    template: `You are a code quality expert. Suggest improvements or refactoring for the following code.
+
+---
+<INSERT_FILE_NAME_AND_CONTENT_HERE>
+`
+  },
+  explain: {
+    title: "Explain Code",
+    description: "Explain what the code does in simple terms.",
+    template: `You are a technical writer. Explain what the following code does in simple, non-technical terms.
+
+---
+<INSERT_FILE_NAME_AND_CONTENT_HERE>
+`
+  },
+  docs: {
+    title: "Generate Documentation",
+    description: "Generate documentation for the code.",
+    template: `You are a documentation specialist. Generate clear, concise documentation for the following code.
+
+---
+<INSERT_FILE_NAME_AND_CONTENT_HERE>
+`
+  },
+  security: {
+    title: "Security Audit",
+    description: "Audit the code for security vulnerabilities.",
+    template: `You are a security expert. Audit the following code for security vulnerabilities and suggest fixes.
+
+---
+<INSERT_FILE_NAME_AND_CONTENT_HERE>
+`
+  },
+  summarize: {
+    title: "Summarize Codebase",
+    description: "Summarize the purpose and main flows of the codebase.",
+    template: `You are a software architect. Summarize the overall purpose, main modules, and key flows of this codebase in clear, non-technical language for business stakeholders.
+
+---
+<INSERT_REPO_STRUCTURE_AND_SAMPLE_CONTENT_HERE>
+`
+  },
+  dependencies: {
+    title: "List Dependencies",
+    description: "List and explain the dependencies in the codebase.",
+    template: `You are a dependency analyst. List and explain the dependencies used in this codebase.
+
+---
+<INSERT_REPO_STRUCTURE_AND_SAMPLE_CONTENT_HERE>
+`
+  },
+  architecture: {
+    title: "Describe Architecture",
+    description: "Describe the architecture and major components of the codebase.",
+    template: `You are a software architect. Describe the architecture and major components of this codebase. Use diagrams if appropriate.
+
+---
+<INSERT_REPO_STRUCTURE_AND_SAMPLE_CONTENT_HERE>
+`
+  },
+  repo: {
+    title: "Set Repository Context",
+    description: "Set or change the repository context for analysis.",
+    template: `Set the repository context to the specified path or URL.`
+  },
+  businessFlows: {
+    title: "Generate Business Flows",
+    description: "Extract and describe business flows and user journeys from the codebase.",
+    template: `You are a senior business analyst.
+
+1. Identify and list the main business entities and their relationships.
+2. Describe the core business workflows and user journeys in bullet points.
+3. Highlight decision points, business rules, and data flow between components.
+4. Use Markdown headers and bullet points for clarity.
+
+---
+<INSERT_REPO_STRUCTURE_AND_SAMPLE_CONTENT_HERE>
+`
+  },
+  files: {
+    title: "List Files",
+    description: "List all files in the repository context.",
+    template: `List all files in the repository context.`
+  }
+};
+
 // src/components/codex-chat.tsx
 import { jsx, jsxs } from "react/jsx-runtime";
+function isSourceFile(filename) {
+  const allowed = [
+    ".js",
+    ".ts",
+    ".jsx",
+    ".tsx",
+    ".py",
+    ".java",
+    ".go",
+    ".rb",
+    ".cs",
+    ".php",
+    ".feature",
+    ".md"
+  ];
+  return allowed.some((ext) => filename.endsWith(ext));
+}
+function isBinaryFile(filename) {
+  const binaryExtensions = [
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".bmp",
+    ".ico",
+    ".exe",
+    ".dll",
+    ".so",
+    ".zip",
+    ".tar",
+    ".gz",
+    ".pdf"
+  ];
+  return binaryExtensions.some((ext) => filename.endsWith(ext));
+}
 function generateRepoContext(repoPath, contextFile) {
   const files = [];
   const walk = (dir) => {
@@ -8217,9 +8379,12 @@ function generateRepoContext(repoPath, contextFile) {
       const fullPath = path2.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(fullPath);
-      } else if (entry.isFile()) {
-        const content = fs3.readFileSync(fullPath, "utf-8").slice(0, 5e3);
-        files.push({ path: fullPath.replace(repoPath + "/", ""), content });
+      } else if (entry.isFile() && !entry.name.startsWith(".") && entry.name !== ".DS_Store" && isSourceFile(entry.name) && !isBinaryFile(entry.name)) {
+        try {
+          const content = fs3.readFileSync(fullPath, "utf-8").slice(0, 5e3);
+          files.push({ path: fullPath.replace(repoPath + "/", ""), content });
+        } catch (e2) {
+        }
       }
     }
   };
@@ -8227,9 +8392,29 @@ function generateRepoContext(repoPath, contextFile) {
   fs3.writeFileSync(contextFile, JSON.stringify(files, null, 2));
   return files;
 }
-var CodexChat = ({ initialPrompt, model, predefinedPrompts = [], config }) => {
+function isGitHubUrl(str) {
+  return str.startsWith("http://") || str.startsWith("https://");
+}
+function cloneRepoIfNeeded(url) {
+  const match = url.match(/github\.com[/:](.*?)\/(.*?)(\.git)?$/);
+  if (!match) throw new Error("\u274C Invalid GitHub URL format");
+  const owner = match[1];
+  const repo = match[2].replace(/\.git$/, "");
+  const localPath = path2.resolve(".repo-cache", `${owner}__${repo}`);
+  if (!fs3.existsSync(localPath)) {
+    console.log(`\u{1F4E5} Cloning ${url} to ${localPath}...`);
+    execSync(`git clone --depth=1 ${url} ${localPath}`, { stdio: "inherit" });
+  }
+  return localPath;
+}
+function highlightGherkin(text) {
+  return text.replace(/^Feature:/gm, "\x1B[33mFeature:\x1B[0m").replace(/^Scenario:/gm, "\x1B[33mScenario:\x1B[0m").replace(/^\s*Given/gm, "\x1B[36mGiven\x1B[0m").replace(/^\s*When/gm, "\x1B[36mWhen\x1B[0m").replace(/^\s*Then/gm, "\x1B[36mThen\x1B[0m").replace(/^\s*And/gm, "\x1B[36mAnd\x1B[0m").replace(/^\s*But/gm, "\x1B[36mBut\x1B[0m");
+}
+var CodexChat = ({ initialPrompt, model, config }) => {
   const [input, setInput] = useState3(initialPrompt || "");
-  const [messages, setMessages] = useState3([{ role: "system", content: "You are a helpful coding assistant." }]);
+  const [messages, setMessages] = useState3([
+    { role: "system", content: "You are a helpful coding assistant." }
+  ]);
   const [thinking, setThinking] = useState3(false);
   const [response, setResponse] = useState3("");
   const [tokensUsed, setTokensUsed] = useState3(null);
@@ -8243,6 +8428,8 @@ var CodexChat = ({ initialPrompt, model, predefinedPrompts = [], config }) => {
       return [];
     }
   });
+  const [lastCommand, setLastCommand] = useState3(null);
+  const [currentRepoPath, setCurrentRepoPath] = useState3(config.defaultRepo);
   const [suggestions, setSuggestions] = useState3([]);
   const historyFilePath = getHistoryFilePath();
   useEffect3(() => {
@@ -8250,7 +8437,7 @@ var CodexChat = ({ initialPrompt, model, predefinedPrompts = [], config }) => {
   }, []);
   useEffect3(() => {
     const parts = input.trim().split(" ");
-    if (parts.length >= 2 && ["/summarize", "/generate", "/gherkin", "/review"].includes(parts[0])) {
+    if (parts.length >= 2 && Object.keys(promptCatalog).includes(parts[0].replace("/", ""))) {
       const partial = parts.slice(1).join(" ").toLowerCase();
       const filtered = repoFiles.filter((f3) => f3.toLowerCase().includes(partial));
       setSuggestions(filtered.slice(0, 5));
@@ -8261,107 +8448,178 @@ var CodexChat = ({ initialPrompt, model, predefinedPrompts = [], config }) => {
   const handleSubmit = async () => {
     const trimmedInput = input.trim();
     if (!trimmedInput) return;
+    const [rawCommand, ...argParts] = trimmedInput.split(" ");
+    const commandKey = rawCommand.replace("/", "");
+    const arg = argParts.join(" ").trim();
+    if (Object.keys(promptCatalog).includes(commandKey)) {
+      if (commandKey === "files") {
+        try {
+          const contextFile2 = path2.join(currentRepoPath, ".repo-context.json");
+          const contextData2 = JSON.parse(fs3.readFileSync(contextFile2, "utf-8"));
+          const fileList = contextData2.map((f3) => `\u{1F4C4} ${f3.path}`).join("\n");
+          setResponse(`\u{1F5C2}\uFE0F Files in context:
+
+${fileList}`);
+        } catch (e2) {
+          setResponse("\u274C Failed to load repo context. Use /repo or /load first.");
+        }
+        setInput("");
+        return;
+      }
+      if (commandKey === "load") {
+        const repoPath = config.defaultRepo;
+        const contextFile2 = path2.join(currentRepoPath, ".repo-context.json");
+        generateRepoContext(currentRepoPath, contextFile2);
+        setResponse(`\u{1F504} Repo context reloaded from: ${repoPath}`);
+        setInput("");
+        return;
+      }
+      const promptEntry = promptCatalog[commandKey];
+      if (commandKey === "repo" && arg) {
+        const repoPath = isGitHubUrl(arg) ? cloneRepoIfNeeded(arg) : arg;
+        if (!fs3.existsSync(repoPath)) {
+          setResponse(`\u274C Directory not found: ${repoPath}`);
+          setInput("");
+          return;
+        }
+        setCurrentRepoPath(repoPath);
+        setResponse(`\u2705 Repo context loaded from: ${repoPath}`);
+        setInput("");
+        return;
+      }
+      const contextFile = path2.join(currentRepoPath, ".repo-context.json");
+      if (!fs3.existsSync(contextFile)) {
+        generateRepoContext(currentRepoPath, contextFile);
+      }
+      const contextData = JSON.parse(fs3.readFileSync(contextFile, "utf-8"));
+      const filteredContext = contextData.filter((f3) => {
+        return !f3.path.startsWith(".") && !f3.path.includes(".DS_Store") && isSourceFile(f3.path) && !isBinaryFile(f3.path);
+      });
+      let fileContent = "";
+      const MAX_FILES = 7;
+      const MAX_LENGTH = 2e3;
+      if (commandKey === "businessFlows" || commandKey === "summarize") {
+        fileContent = contextData.slice(0, MAX_FILES).map((f3) => `File: ${f3.path}
+${f3.content.slice(0, MAX_LENGTH)}`).join("\n---\n");
+      } else if (!arg) {
+        fileContent = filteredContext.slice(0, MAX_FILES).map((f3) => `File: ${f3.path}
+
+${f3.content.slice(0, MAX_LENGTH)}`).join("\n---\n");
+      } else {
+        const match = filteredContext.find((f3) => f3.path.toLowerCase().includes(arg.toLowerCase()));
+        if (match) {
+          fileContent = `File: ${match.path}
+
+${match.content.slice(0, MAX_LENGTH)}`;
+        } else {
+          setResponse(`\u274C File not found for command \\${commandKey}: ${arg}`);
+          setInput("");
+          return;
+        }
+      }
+      const finalPrompt = promptEntry.template.replace("<INSERT_FILE_NAME_AND_CONTENT_HERE>", fileContent).replace("<INSERT_REPO_STRUCTURE_AND_SAMPLE_CONTENT_HERE>", fileContent);
+      setLastCommand(commandKey);
+      const newMessages2 = [...messages, { role: "user", content: finalPrompt }];
+      setMessages(newMessages2);
+      setThinking(true);
+      setInput("");
+      const start2 = Date.now();
+      const apiUrl2 = config.apiBaseUrl || "http://localhost:1234/v1";
+      const apiKey2 = config.apiKey || "sk-local";
+      try {
+        const payload = {
+          model,
+          messages: newMessages2,
+          temperature: 0.2,
+          max_tokens: 3e3,
+          stream: false
+        };
+        const res = await fetch(`${apiUrl2}/chat/completions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...apiKey2 ? { Authorization: `Bearer ${apiKey2}` } : {}
+          },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`API Error: ${await res.text()}`);
+        const data = await res.json();
+        const assistantReply = data.choices?.[0]?.message?.content || "No reply.";
+        const tokens = data.usage?.total_tokens || null;
+        const end = Date.now();
+        setThinking(false);
+        setResponse(assistantReply);
+        setMessages((prev) => [...prev, { role: "assistant", content: assistantReply }]);
+        setTokensUsed(tokens);
+        if (tokens && tokens > 8e3) {
+          console.warn("\u26A0\uFE0F High token usage detected:", tokens);
+        }
+        setTimeTaken(Math.round((end - start2) / 1e3));
+        const history = JSON.parse(fs3.readFileSync(historyFilePath, "utf-8"));
+        history.push({ prompt: trimmedInput, response: assistantReply });
+        fs3.writeFileSync(historyFilePath, JSON.stringify(history, null, 2));
+        return;
+      } catch (error) {
+        setThinking(false);
+        setResponse("\u274C Failed to get response from LMStudio. Check if LMStudio is running and reachable.");
+        return;
+      }
+    }
     if (trimmedInput === "/clear") {
+      setMessages([{ role: "system", content: "You are a helpful coding assistant." }]);
       setResponse("");
       setInput("");
+      setTokensUsed(null);
+      setTimeTaken(null);
       return;
     }
     if (trimmedInput === "/clear-history") {
-      fs3.writeFileSync(historyFilePath, JSON.stringify([]));
+      try {
+        fs3.writeFileSync(historyFilePath, JSON.stringify([], null, 2));
+        setResponse("\u{1F9F9} History cleared successfully.");
+      } catch (e2) {
+        setResponse("\u274C Failed to clear history.");
+      }
       setInput("");
       return;
     }
     if (trimmedInput === "/history") {
       try {
         const history = JSON.parse(fs3.readFileSync(historyFilePath, "utf-8"));
-        const output = history.length ? `\u{1F4DC} Prompt History (${history.length} items):
-` + history.map((h2, i2) => `${i2 + 1}. ${h2.prompt}`).join("\n") + "\n\n\u{1F522} Type `/load <number>` to reload that entry." : "No history yet.";
-        setResponse(output);
+        const formatted = [
+          "| #  | Prompt",
+          "|----|--------",
+          ...history.map((item, idx) => `| ${String(idx + 1).padEnd(2)} | ${item.prompt}`)
+        ].join("\n");
+        setResponse(`\u{1F558} Prompt History:
+
+${formatted}`);
       } catch (e2) {
-        setResponse("Failed to load history.");
+        setResponse("\u274C Failed to read history.");
       }
       setInput("");
       return;
     }
     if (trimmedInput.startsWith("/load ")) {
-      const index = parseInt(trimmedInput.split(" ")[1]);
-      const history = JSON.parse(fs3.readFileSync(historyFilePath, "utf-8"));
-      const entry = history[index - 1];
-      if (entry) {
-        setResponse(`\u{1F9E0} Recalled Prompt:
-${entry.prompt}
-
-\u{1F4AC} Response:
-${entry.response}`);
+      const idx = parseInt(trimmedInput.replace("/load ", ""), 10);
+      if (!isNaN(idx)) {
+        try {
+          const history = JSON.parse(fs3.readFileSync(historyFilePath, "utf-8"));
+          if (history[idx - 1]) {
+            setInput(history[idx - 1].prompt);
+            setResponse(history[idx - 1].response);
+          } else {
+            setResponse(`\u274C No history found for index ${idx}`);
+          }
+        } catch (e2) {
+          setResponse("\u274C Failed to load history.");
+        }
       } else {
-        setResponse("\u274C Invalid history entry.");
+        setResponse("\u274C Invalid number provided for /load");
       }
-      setInput("");
       return;
     }
-    if (trimmedInput.startsWith("/repo ")) {
-      const repoPathInput = trimmedInput.replace("/repo ", "").trim();
-      let repoPath = repoPathInput;
-      try {
-        if (repoPathInput.startsWith("http")) {
-          const tmpPath = `/tmp/codeassist-repo-${Date.now()}`;
-          execSync(`git clone ${repoPathInput} ${tmpPath}`);
-          repoPath = tmpPath;
-        } else if (!fs3.existsSync(repoPathInput)) {
-          throw new Error("Local path does not exist.");
-        }
-        const contextFile = path2.join(repoPath, ".repo-context.json");
-        const fileData = generateRepoContext(repoPath, contextFile);
-        const paths = fileData.map((f3) => f3.path);
-        setRepoFiles(paths);
-        fs3.writeFileSync(".repo-cache.json", JSON.stringify({ paths }, null, 2));
-        config.defaultRepo = repoPath;
-        config.defaultPath = repoPath;
-        setResponse(`\u{1F4C1} Repo path updated to ${repoPath}
-\u{1F4CE} Context loaded with ${fileData.length} files.
-\u2705 You can now use commands like /gherkin, /summarize, /generate etc., and they will use this repo context.`);
-        setInput("");
-        return;
-      } catch (err) {
-        setResponse(`\u274C Failed to set repo context: ${err.message}`);
-        setInput("");
-        return;
-      }
-    }
-    let newMessages;
-    if (["/summarize", "/gherkin", "/review", "/generate"].some((cmd) => trimmedInput.startsWith(cmd))) {
-      const command = trimmedInput.split(" ")[0];
-      const fileArg = trimmedInput.replace(command, "").trim();
-      const contextFile = path2.join(config.defaultRepo, ".repo-context.json");
-      const contextData = JSON.parse(fs3.readFileSync(contextFile, "utf-8"));
-      if (!fileArg) {
-        const joinedContent = contextData.map((f3) => `File: ${f3.path}
-
-${f3.content}`).join("\n\n");
-        newMessages = [...messages, {
-          role: "user",
-          content: `Please ${command.slice(1)} the entire repository including all components and interactions.
-
-${joinedContent}`
-        }];
-      } else {
-        const match = contextData.find((f3) => f3.path.toLowerCase().includes(fileArg.toLowerCase()));
-        if (match) {
-          newMessages = [...messages, {
-            role: "user",
-            content: `Please ${command.slice(1)} the following file: ${match.path}
-
-${match.content}`
-          }];
-        } else {
-          setResponse(`\u274C File not found for ${command.slice(1)}: ${fileArg}`);
-          setInput("");
-          return;
-        }
-      }
-    } else {
-      newMessages = [...messages, { role: "user", content: input }];
-    }
+    const newMessages = [...messages, { role: "user", content: trimmedInput }];
     setMessages(newMessages);
     setThinking(true);
     setInput("");
@@ -8373,12 +8631,13 @@ ${match.content}`
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`
+          ...apiKey ? { Authorization: `Bearer ${apiKey}` } : {}
         },
         body: JSON.stringify({
           model,
           messages: newMessages,
           temperature: 0.2,
+          max_tokens: 3e3,
           stream: false
         })
       });
@@ -8395,10 +8654,11 @@ ${match.content}`
       const history = JSON.parse(fs3.readFileSync(historyFilePath, "utf-8"));
       history.push({ prompt: trimmedInput, response: assistantReply });
       fs3.writeFileSync(historyFilePath, JSON.stringify(history, null, 2));
+      return;
     } catch (error) {
       setThinking(false);
-      console.error("\u{1F6A8} Error:", error);
       setResponse("\u274C Failed to get response from LMStudio. Check if LMStudio is running and reachable.");
+      return;
     }
   };
   return /* @__PURE__ */ jsxs(Box, { flexDirection: "column", padding: 1, width: "80%", children: [
@@ -8411,6 +8671,10 @@ ${match.content}`
         "\u{1F4E6} Default Repo: ",
         config?.defaultRepo || "N/A"
       ] }),
+      /* @__PURE__ */ jsxs(Text3, { color: "cyan", children: [
+        "\u{1F4C1} Active Repo: ",
+        currentRepoPath
+      ] }),
       /* @__PURE__ */ jsxs(Text3, { children: [
         "\u{1F6E0}\uFE0F Model: ",
         model
@@ -8420,16 +8684,17 @@ ${match.content}`
         config?.defaultPath || "N/A"
       ] })
     ] }),
-    Array.isArray(predefinedPrompts) && predefinedPrompts.length > 0 && /* @__PURE__ */ jsxs(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "classic", borderColor: "magenta", width: "80%", padding: 1, alignSelf: "center", children: [
+    /* @__PURE__ */ jsxs(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "classic", borderColor: "magenta", width: "80%", padding: 1, alignSelf: "center", children: [
       /* @__PURE__ */ jsx(Text3, { color: "magentaBright", children: "\u{1F9E0} Predefined Prompts:" }),
-      predefinedPrompts.map((prompt, idx) => /* @__PURE__ */ jsxs(Text3, { color: "yellow", children: [
-        "- ",
-        prompt
+      Object.entries(promptCatalog).map(([cmd], idx) => /* @__PURE__ */ jsxs(Text3, { color: "yellow", children: [
+        "- /",
+        cmd
       ] }, idx))
     ] }),
     response && /* @__PURE__ */ jsxs(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "round", borderColor: "green", width: "80%", paddingX: 1, alignSelf: "center", children: [
       /* @__PURE__ */ jsx(Text3, { color: "magentaBright", children: "\u{1F4AC} Assistant Response:" }),
-      /* @__PURE__ */ jsx(Text3, { children: response }),
+      lastCommand === "architecture" && response.includes("graph TD") ? /* @__PURE__ */ jsx(Text3, { color: "white", children: "\u{1F4CA} Mermaid Output Detected (render externally):" }) : null,
+      /* @__PURE__ */ jsx(Text3, { children: highlightGherkin(response) }),
       tokensUsed !== null && /* @__PURE__ */ jsxs(Text3, { color: "cyan", children: [
         "Tokens: ",
         tokensUsed,
@@ -8439,11 +8704,16 @@ ${match.content}`
       ] })
     ] }),
     !thinking && /* @__PURE__ */ jsxs(Box, { flexDirection: "column", width: "80%", alignSelf: "center", marginTop: 1, children: [
-      /* @__PURE__ */ jsx(Box, { borderStyle: "round", borderColor: "blue", paddingX: 1, children: /* @__PURE__ */ jsx(build_default, { value: input, onChange: setInput, onSubmit: handleSubmit, placeholder: "Type your question here", focus: true }) }),
-      suggestions.length > 0 && /* @__PURE__ */ jsxs(Box, { flexDirection: "column", paddingLeft: 2, children: [
-        /* @__PURE__ */ jsx(Text3, { color: "gray", children: "Suggestions:" }),
-        suggestions.map((file, i2) => /* @__PURE__ */ jsx(Text3, { color: "blue", children: file }, i2))
-      ] }),
+      /* @__PURE__ */ jsx(Box, { borderStyle: "round", borderColor: "blue", paddingX: 1, children: /* @__PURE__ */ jsx(
+        build_default,
+        {
+          value: input,
+          onChange: setInput,
+          onSubmit: handleSubmit,
+          placeholder: "Type your question here",
+          focus: true
+        }
+      ) }),
       /* @__PURE__ */ jsx(Box, { marginTop: 1, children: /* @__PURE__ */ jsxs(Text3, { children: [
         "Press ",
         /* @__PURE__ */ jsx(Text3, { color: "green", children: "Enter" }),

@@ -1,243 +1,4 @@
-// // File: src/components/codex-chat.tsx
-
-// import React, { useState, useEffect } from "react";
-// import { Box, Text } from "ink";
-// import TextInput from "ink-text-input";
-// import Spinner from "ink-spinner";
-// import fs from "fs";
-// import path from "path";
-// import fetch from "node-fetch";
-// import {
-//   getHistoryFilePath,
-//   ensureHistoryFileExists,
-//   loadHistoryCache
-// } from "../utils/ensureHistoryFileExists";
-// import { updateContextFromRepo } from "../utils/repo-loader";
-
-// interface CodexChatProps {
-//   initialPrompt: string;
-//   model: string;
-//   predefinedPrompts: string[];
-//   config: {
-//     apiBaseUrl: string;
-//     apiKey: string;
-//     defaultRepo: string;
-//     defaultModel: string;
-//     defaultPath: string;
-//   };
-// }
-
-// interface Message {
-//   role: "system" | "user" | "assistant";
-//   content: string;
-// }
-
-// export const CodexChat: React.FC<CodexChatProps> = ({
-//   initialPrompt,
-//   model,
-//   predefinedPrompts = [],
-//   config
-// }) => {
-//   const [input, setInput] = useState<string>(initialPrompt || "");
-//   const [messages, setMessages] = useState<Message[]>([
-//     {
-//       role: "system",
-//       content: "You are a helpful coding assistant."
-//     }
-//   ]);
-//   const [thinking, setThinking] = useState<boolean>(false);
-//   const [response, setResponse] = useState<string>("");
-//   const [tokensUsed, setTokensUsed] = useState<number | null>(null);
-//   const [timeTaken, setTimeTaken] = useState<number | null>(null);
-//   const [history, setHistory] = useState<{ prompt: string; response: string }[]>([]);
-
-//   useEffect(() => {
-//     const history = loadHistoryCache();
-//     setHistory(history);
-//   }, []);
-
-//   const handleSubmit = async () => {
-//     const trimmedInput = input.trim();
-//     if (!trimmedInput) return;
-
-//     const historyFilePath = getHistoryFilePath();
-//     await ensureHistoryFileExists(historyFilePath);
-
-//     if (trimmedInput === "/clear") {
-//       setResponse("");
-//       setInput("");
-//       return;
-//     }
-
-//     if (trimmedInput === "/clear history") {
-//       fs.writeFileSync(historyFilePath, JSON.stringify([]));
-//       setHistory([]);
-//       setResponse("🧹 History cleared.");
-//       setInput("");
-//       return;
-//     }
-
-//     if (trimmedInput === "/history") {
-//       const history = loadHistoryCache();
-//       const historyOutput = history.length
-//         ? `🕓 ${history.length} items in history:\n` +
-//           history.map((entry, i) => `${i + 1}. ${entry.prompt}`).join("\n") +
-//           "\n\nType `/recall <number>` to view that entry."
-//         : "No history yet.";
-//       setResponse(historyOutput);
-//       setInput("");
-//       return;
-//     }
-
-//     if (/^\/recall\s+\d+/.test(trimmedInput)) {
-//       const index = parseInt(trimmedInput.replace("/recall", "").trim(), 10) - 1;
-//       if (isNaN(index) || index < 0 || index >= history.length) {
-//         setResponse("❌ Invalid history item number.");
-//         setInput("");
-//         return;
-//       }
-//       const entry = history[index];
-//       setResponse(`🧠 Recalled Prompt:\n${entry.prompt}\n\n💬 Response:\n${entry.response}`);
-//       setInput("");
-//       return;
-//     }
-
-//     if (trimmedInput.startsWith("/repo ")) {
-//       const repoPath = trimmedInput.replace("/repo ", "").trim();
-//       updateContextFromRepo(repoPath);
-//       config.defaultRepo = repoPath;
-//       config.defaultPath = repoPath;
-//       setInput("");
-//       setResponse(`📁 Repo path updated to ${repoPath}\n🔄 Context is now active and will be used for all /commands and prompts.`);
-//       return;
-//     }
-
-//     let userContent = trimmedInput;
-
-//     if (config?.defaultRepo) {
-//       const repoContextPath = path.join(config.defaultRepo, ".repo-context.json");
-//       try {
-//         const repoFiles = JSON.parse(fs.readFileSync(repoContextPath, "utf-8"));
-
-//         const match = trimmedInput.match(/^\/(gherkin|summarize|review)\s+(.+)/i);
-//         if (match) {
-//           const [, command, filename] = match;
-//           const matchedFile = repoFiles.find((f: any) => f.path.endsWith(filename.trim()));
-//           if (!matchedFile) {
-//             setResponse(`❌ File \"${filename}\" not found in repo context. Please provide a valid filename.`);
-//             setInput("");
-//             return;
-//           }
-//           userContent = `Here is the content of ${matchedFile.path} from the repo:\n\n${matchedFile.content.slice(0, 3000)}\n\nNow: ${command} the code.`;
-//         }
-//       } catch (e) {
-//         console.warn("⚠️ Repo context missing or failed to load:", e.message);
-//       }
-//     }
-
-//     setThinking(true);
-//     setInput("");
-//     const start = Date.now();
-//     const newMessages = [...messages, { role: "user", content: userContent }];
-//     setMessages(newMessages);
-
-//     try {
-//       const res = await fetch(`${config.apiBaseUrl}/chat/completions`, {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${config.apiKey}`
-//         },
-//         body: JSON.stringify({
-//           model,
-//           messages: newMessages,
-//           temperature: 0.2,
-//           stream: false
-//         })
-//       });
-
-//       if (!res.ok) throw new Error(`API Error: ${await res.text()}`);
-
-//       const data = await res.json();
-//       const assistantReply = data.choices?.[0]?.message?.content || "No reply.";
-//       const tokens = data.usage?.total_tokens || null;
-//       const end = Date.now();
-
-//       setThinking(false);
-//       setResponse(assistantReply);
-//       setMessages(prev => [...prev, { role: "assistant", content: assistantReply }]);
-//       setTokensUsed(tokens);
-//       setTimeTaken(Math.round((end - start) / 1000));
-
-//       const updatedHistory = [...history, { prompt: trimmedInput, response: assistantReply }];
-//       setHistory(updatedHistory);
-//       fs.writeFileSync(historyFilePath, JSON.stringify(updatedHistory, null, 2));
-//     } catch (error) {
-//       setThinking(false);
-//       console.error("🚨 Error:", error);
-//       setResponse("❌ Error: Failed to get response from LMStudio. Check if LM Studio is running and reachable.");
-//     }
-//   };
-
-//   return (
-//     <Box flexDirection="column" padding={1} width="80%">
-//       <Box marginBottom={1} flexDirection="column" borderStyle="round" borderColor="cyan" width="80%" alignSelf="center">
-//         <Text color="cyanBright">🚀 CodeAssist CLI (by Ravi)</Text>
-//         <Text color="green">Built with ❤️ LMStudio + Qwen2.5</Text>
-//       </Box>
-
-//       <Box marginBottom={1} flexDirection="column" borderStyle="round" borderColor="yellow" width="80%" padding={1} alignSelf="center">
-//         <Text>📦 Default Repo: {config?.defaultRepo || "N/A"}</Text>
-//         <Text>🛠️ Model: {model || config?.defaultModel || "N/A"}</Text>
-//         <Text>📂 Path: {config?.defaultPath || "N/A"}</Text>
-//         <Text color="cyanBright">📎 Context will be used for all /commands and prompts this session</Text>
-//       </Box>
-
-//       {Array.isArray(predefinedPrompts) && predefinedPrompts.length > 0 && (
-//         <Box marginBottom={1} flexDirection="column" borderStyle="round" borderColor="magenta" width="80%" padding={1} alignSelf="center">
-//           <Text color="magentaBright">🧠 Predefined Prompts:</Text>
-//           {predefinedPrompts.map((prompt, idx) => (
-//             <Text key={idx} color="yellow">- {prompt}</Text>
-//           ))}
-//         </Box>
-//       )}
-
-//       {response && (
-//         <Box marginBottom={1} flexDirection="column" borderStyle="round" borderColor="green" width="80%" paddingX={1} alignSelf="center">
-//           <Text color="magentaBright">💬 Assistant Response:</Text>
-//           <Text>{response}</Text>
-//           {tokensUsed !== null && <Text color="cyan">Tokens: {tokensUsed} | Time: {timeTaken}s</Text>}
-//         </Box>
-//       )}
-
-//       {!thinking && (
-//         <Box flexDirection="column" width="80%" alignSelf="center" marginTop={1}>
-//           <Box borderStyle="round" borderColor="blue" paddingX={1}>
-//             <TextInput
-//               value={input}
-//               onChange={setInput}
-//               onSubmit={handleSubmit}
-//               placeholder="Type your question here"
-//               focus
-//             />
-//           </Box>
-//           <Box marginTop={1}>
-//             <Text>Press <Text color="green">Enter</Text> to send | <Text color="red">/history</Text>, <Text color="red">/recall</Text>, <Text color="red">/clear</Text>, <Text color="red">/clear history</Text></Text>
-//           </Box>
-//         </Box>
-//       )}
-
-//       {thinking && (
-//         <Box marginTop={1}><Text color="green"><Spinner type="dots" /> Thinking...</Text></Box>
-//       )}
-//     </Box>
-//   );
-// };
-
-
-
-
-// File: src/components/codex-chat.tsx
+// src/components/codex-chat.tsx
 
 import React, { useState, useEffect } from "react";
 import { Box, Text } from "ink";
@@ -248,7 +9,24 @@ import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
 import { getHistoryFilePath, ensureHistoryFileExists } from "../utils/ensureHistoryFileExists";
+import { promptCatalog } from "../prompts/promptCatalog";
 
+// --- File Filtering Helpers ---
+function isSourceFile(filename: string): boolean {
+  const allowed = [
+    ".js", ".ts", ".jsx", ".tsx", ".py", ".java", ".go", ".rb", ".cs", ".php", ".feature", ".md"
+  ];
+  return allowed.some(ext => filename.endsWith(ext));
+}
+
+function isBinaryFile(filename: string): boolean {
+  const binaryExtensions = [
+    ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".exe", ".dll", ".so", ".zip", ".tar", ".gz", ".pdf"
+  ];
+  return binaryExtensions.some(ext => filename.endsWith(ext));
+}
+
+// --- Repo Context Generation ---
 function generateRepoContext(repoPath: string, contextFile: string) {
   const files: { path: string; content: string }[] = [];
   const walk = (dir: string) => {
@@ -257,9 +35,19 @@ function generateRepoContext(repoPath: string, contextFile: string) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(fullPath);
-      } else if (entry.isFile()) {
-        const content = fs.readFileSync(fullPath, "utf-8").slice(0, 5000);
-        files.push({ path: fullPath.replace(repoPath + "/", ""), content });
+      } else if (
+        entry.isFile() &&
+        !entry.name.startsWith(".") &&
+        entry.name !== ".DS_Store" &&
+        isSourceFile(entry.name) &&
+        !isBinaryFile(entry.name)
+      ) {
+        try {
+          const content = fs.readFileSync(fullPath, "utf-8").slice(0, 5000);
+          files.push({ path: fullPath.replace(repoPath + "/", ""), content });
+        } catch (e) {
+          // Ignore unreadable files
+        }
       }
     }
   };
@@ -268,10 +56,40 @@ function generateRepoContext(repoPath: string, contextFile: string) {
   return files;
 }
 
+function isGitHubUrl(str: string) {
+  return str.startsWith("http://") || str.startsWith("https://");
+}
+
+function cloneRepoIfNeeded(url: string): string {
+  const match = url.match(/github\.com[/:](.*?)\/(.*?)(\.git)?$/);
+  if (!match) throw new Error("❌ Invalid GitHub URL format");
+  const owner = match[1];
+  const repo = match[2].replace(/\.git$/, "");
+  const localPath = path.resolve(".repo-cache", `${owner}__${repo}`);
+
+  if (!fs.existsSync(localPath)) {
+    console.log(`📥 Cloning ${url} to ${localPath}...`);
+    execSync(`git clone --depth=1 ${url} ${localPath}`, { stdio: "inherit" });
+  }
+
+  return localPath;
+}
+
+// --- Enhanced Gherkin Highlighting ---
+function highlightGherkin(text: string) {
+  return text
+    .replace(/^Feature:/gm, '\x1b[33mFeature:\x1b[0m')
+    .replace(/^Scenario:/gm, '\x1b[33mScenario:\x1b[0m')
+    .replace(/^\s*Given/gm, '\x1b[36mGiven\x1b[0m')
+    .replace(/^\s*When/gm, '\x1b[36mWhen\x1b[0m')
+    .replace(/^\s*Then/gm, '\x1b[36mThen\x1b[0m')
+    .replace(/^\s*And/gm, '\x1b[36mAnd\x1b[0m')
+    .replace(/^\s*But/gm, '\x1b[36mBut\x1b[0m');
+}
+
 interface CodexChatProps {
   initialPrompt: string;
   model: string;
-  predefinedPrompts: string[];
   config: {
     apiBaseUrl: string;
     apiKey: string;
@@ -286,9 +104,11 @@ interface Message {
   content: string;
 }
 
-export const CodexChat: React.FC<CodexChatProps> = ({ initialPrompt, model, predefinedPrompts = [], config }) => {
+export const CodexChat: React.FC<CodexChatProps> = ({ initialPrompt, model, config }) => {
   const [input, setInput] = useState(initialPrompt || "");
-  const [messages, setMessages] = useState<Message[]>([{ role: "system", content: "You are a helpful coding assistant." }]);
+  const [messages, setMessages] = useState<Message[]>([
+    { role: "system", content: "You are a helpful coding assistant." }
+  ]);
   const [thinking, setThinking] = useState(false);
   const [response, setResponse] = useState("");
   const [tokensUsed, setTokensUsed] = useState<number | null>(null);
@@ -302,13 +122,15 @@ export const CodexChat: React.FC<CodexChatProps> = ({ initialPrompt, model, pred
       return [];
     }
   });
+  const [lastCommand, setLastCommand] = useState<string | null>(null);
+  const [currentRepoPath, setCurrentRepoPath] = useState(config.defaultRepo);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const historyFilePath = getHistoryFilePath();
 
   useEffect(() => { ensureHistoryFileExists(historyFilePath); }, []);
   useEffect(() => {
     const parts = input.trim().split(" ");
-    if (parts.length >= 2 && ["/summarize", "/generate", "/gherkin", "/review"].includes(parts[0])) {
+    if (parts.length >= 2 && Object.keys(promptCatalog).includes(parts[0].replace("/", ""))) {
       const partial = parts.slice(1).join(" ").toLowerCase();
       const filtered = repoFiles.filter(f => f.toLowerCase().includes(partial));
       setSuggestions(filtered.slice(0, 5));
@@ -321,119 +143,222 @@ export const CodexChat: React.FC<CodexChatProps> = ({ initialPrompt, model, pred
     const trimmedInput = input.trim();
     if (!trimmedInput) return;
 
+    const [rawCommand, ...argParts] = trimmedInput.split(" ");
+    const commandKey = rawCommand.replace("/", "");
+    const arg = argParts.join(" ").trim();
+
+    if (Object.keys(promptCatalog).includes(commandKey)) {
+      if (commandKey === "files") {
+        try {
+          const contextFile = path.join(currentRepoPath, ".repo-context.json");
+          const contextData = JSON.parse(fs.readFileSync(contextFile, "utf-8"));
+          const fileList = contextData.map((f: any) => `📄 ${f.path}`).join("\n");
+          setResponse(`🗂️ Files in context:\n\n${fileList}`);
+        } catch (e) {
+          setResponse("❌ Failed to load repo context. Use /repo or /load first.");
+        }
+        setInput("");
+        return;
+      }
+      if (commandKey === "load") {
+        const repoPath = config.defaultRepo;
+        const contextFile = path.join(currentRepoPath, ".repo-context.json");
+        generateRepoContext(currentRepoPath, contextFile);
+        setResponse(`🔄 Repo context reloaded from: ${repoPath}`);
+        setInput("");
+        return;
+      }
+      const promptEntry = promptCatalog[commandKey];
+
+      if (commandKey === "repo" && arg) {
+        const repoPath = isGitHubUrl(arg) ? cloneRepoIfNeeded(arg) : arg;
+        if (!fs.existsSync(repoPath)) {
+          setResponse(`❌ Directory not found: ${repoPath}`);
+          setInput("");
+          return;
+        }
+        setCurrentRepoPath(repoPath);
+        setResponse(`✅ Repo context loaded from: ${repoPath}`);
+        setInput("");
+        return;
+      }
+
+      const contextFile = path.join(currentRepoPath, ".repo-context.json");
+      if (!fs.existsSync(contextFile)) {
+        generateRepoContext(currentRepoPath, contextFile);
+      }
+      const contextData = JSON.parse(fs.readFileSync(contextFile, "utf-8"));
+
+      // --- Enhanced Filtering ---
+      const filteredContext = contextData.filter((f: any) => {
+        return (
+          !f.path.startsWith(".") &&
+          !f.path.includes(".DS_Store") &&
+          isSourceFile(f.path) &&
+          !isBinaryFile(f.path)
+        );
+      });
+
+      // --- Business Flows and Summarize Use Full Context, Others Use Filtered ---
+      let fileContent = "";
+      const MAX_FILES = 7;
+      const MAX_LENGTH = 2000;
+
+      if (commandKey === "businessFlows" || commandKey === "summarize") {
+        fileContent = contextData
+          .slice(0, MAX_FILES)
+          .map((f: any) => `File: ${f.path}\n${f.content.slice(0, MAX_LENGTH)}`)
+          .join('\n---\n');
+      } else if (!arg) {
+        fileContent = filteredContext
+          .slice(0, MAX_FILES)
+          .map((f: any) => `File: ${f.path}\n\n${f.content.slice(0, MAX_LENGTH)}`)
+          .join("\n---\n");
+      } else {
+        const match = filteredContext.find((f: any) => f.path.toLowerCase().includes(arg.toLowerCase()));
+        if (match) {
+          fileContent = `File: ${match.path}\n\n${match.content.slice(0, MAX_LENGTH)}`;
+        } else {
+          setResponse(`❌ File not found for command \\${commandKey}: ${arg}`);
+          setInput("");
+          return;
+        }
+      }
+
+      // Compose final prompt
+      const finalPrompt = promptEntry.template
+        .replace("<INSERT_FILE_NAME_AND_CONTENT_HERE>", fileContent)
+        .replace("<INSERT_REPO_STRUCTURE_AND_SAMPLE_CONTENT_HERE>", fileContent);
+
+      setLastCommand(commandKey);
+      const newMessages = [...messages, { role: "user", content: finalPrompt }];
+      setMessages(newMessages);
+      setThinking(true);
+      setInput("");
+      const start = Date.now();
+      const apiUrl = config.apiBaseUrl || "http://localhost:1234/v1";
+      const apiKey = config.apiKey || "sk-local";
+
+      try {
+        const payload = {
+          model,
+          messages: newMessages,
+          temperature: 0.2,
+          max_tokens: 3000,
+          stream: false
+        };
+        const res = await fetch(`${apiUrl}/chat/completions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) throw new Error(`API Error: ${await res.text()}`);
+
+        const data = await res.json();
+        const assistantReply = data.choices?.[0]?.message?.content || "No reply.";
+        const tokens = data.usage?.total_tokens || null;
+        const end = Date.now();
+
+        setThinking(false);
+        setResponse(assistantReply);
+        setMessages(prev => [...prev, { role: "assistant", content: assistantReply }]);
+        setTokensUsed(tokens);
+
+        if (tokens && tokens > 8000) {
+          console.warn("⚠️ High token usage detected:", tokens);
+        }
+        setTimeTaken(Math.round((end - start) / 1000));
+
+        const history = JSON.parse(fs.readFileSync(historyFilePath, "utf-8"));
+        history.push({ prompt: trimmedInput, response: assistantReply });
+        fs.writeFileSync(historyFilePath, JSON.stringify(history, null, 2));
+        return;
+      } catch (error) {
+        setThinking(false);
+        setResponse("❌ Failed to get response from LMStudio. Check if LMStudio is running and reachable.");
+        return;
+      }
+    }
+
+    // Handle special /clear, /clear-history, and /history commands
     if (trimmedInput === "/clear") {
+      setMessages([{ role: "system", content: "You are a helpful coding assistant." }]);
       setResponse("");
       setInput("");
+      setTokensUsed(null);
+      setTimeTaken(null);
       return;
     }
     if (trimmedInput === "/clear-history") {
-      fs.writeFileSync(historyFilePath, JSON.stringify([]));
+      try {
+        fs.writeFileSync(historyFilePath, JSON.stringify([], null, 2));
+        setResponse("🧹 History cleared successfully.");
+      } catch (e) {
+        setResponse("❌ Failed to clear history.");
+      }
       setInput("");
       return;
     }
     if (trimmedInput === "/history") {
       try {
         const history = JSON.parse(fs.readFileSync(historyFilePath, "utf-8"));
-        const output = history.length
-          ? `📜 Prompt History (${history.length} items):\n` +
-            history.map((h: any, i: number) => `${i + 1}. ${h.prompt}`).join("\n") +
-            "\n\n🔢 Type `/load <number>` to reload that entry."
-          : "No history yet.";
-        setResponse(output);
+        const formatted = [
+          '| #  | Prompt',
+          '|----|--------',
+          ...history.map((item: any, idx: number) => `| ${String(idx + 1).padEnd(2)} | ${item.prompt}`)
+        ].join("\n");
+        setResponse(`🕘 Prompt History:\n\n${formatted}`);
       } catch (e) {
-        setResponse("Failed to load history.");
+        setResponse("❌ Failed to read history.");
       }
       setInput("");
       return;
     }
+
     if (trimmedInput.startsWith("/load ")) {
-      const index = parseInt(trimmedInput.split(" ")[1]);
-      const history = JSON.parse(fs.readFileSync(historyFilePath, "utf-8"));
-      const entry = history[index - 1];
-      if (entry) {
-        setResponse(`🧠 Recalled Prompt:\n${entry.prompt}\n\n💬 Response:\n${entry.response}`);
+      const idx = parseInt(trimmedInput.replace("/load ", ""), 10);
+      if (!isNaN(idx)) {
+        try {
+          const history = JSON.parse(fs.readFileSync(historyFilePath, "utf-8"));
+          if (history[idx - 1]) {
+            setInput(history[idx - 1].prompt);
+            setResponse(history[idx - 1].response);
+          } else {
+            setResponse(`❌ No history found for index ${idx}`);
+          }
+        } catch (e) {
+          setResponse("❌ Failed to load history.");
+        }
       } else {
-        setResponse("❌ Invalid history entry.");
+        setResponse("❌ Invalid number provided for /load");
       }
-      setInput("");
       return;
     }
-    if (trimmedInput.startsWith("/repo ")) {
-      const repoPathInput = trimmedInput.replace("/repo ", "").trim();
-      let repoPath = repoPathInput;
-      try {
-        if (repoPathInput.startsWith("http")) {
-          const tmpPath = `/tmp/codeassist-repo-${Date.now()}`;
-          execSync(`git clone ${repoPathInput} ${tmpPath}`);
-          repoPath = tmpPath;
-        } else if (!fs.existsSync(repoPathInput)) {
-          throw new Error("Local path does not exist.");
-        }
-        const contextFile = path.join(repoPath, ".repo-context.json");
-        const fileData = generateRepoContext(repoPath, contextFile);
-        const paths = fileData.map(f => f.path);
-        setRepoFiles(paths);
-        fs.writeFileSync(".repo-cache.json", JSON.stringify({ paths }, null, 2));
-        config.defaultRepo = repoPath;
-        config.defaultPath = repoPath;
-        setResponse(`📁 Repo path updated to ${repoPath}\n📎 Context loaded with ${fileData.length} files.\n✅ You can now use commands like /gherkin, /summarize, /generate etc., and they will use this repo context.`);
-        setInput("");
-        return;
-      } catch (err: any) {
-        setResponse(`❌ Failed to set repo context: ${err.message}`);
-        setInput("");
-        return;
-      }
-    }
 
-    let newMessages: Message[];
-    if (["/summarize", "/gherkin", "/review", "/generate"].some(cmd => trimmedInput.startsWith(cmd))) {
-      const command = trimmedInput.split(" ")[0];
-      const fileArg = trimmedInput.replace(command, "").trim();
-      const contextFile = path.join(config.defaultRepo, ".repo-context.json");
-      const contextData = JSON.parse(fs.readFileSync(contextFile, "utf-8"));
-
-      if (!fileArg) {
-        const joinedContent = contextData.map((f: any) => `File: ${f.path}\n\n${f.content}`).join("\n\n");
-        newMessages = [...messages, {
-          role: "user",
-          content: `Please ${command.slice(1)} the entire repository including all components and interactions.\n\n${joinedContent}`,
-        }];
-      } else {
-        const match = contextData.find((f: any) => f.path.toLowerCase().includes(fileArg.toLowerCase()));
-        if (match) {
-          newMessages = [...messages, {
-            role: "user",
-            content: `Please ${command.slice(1)} the following file: ${match.path}\n\n${match.content}`,
-          }];
-        } else {
-          setResponse(`❌ File not found for ${command.slice(1)}: ${fileArg}`);
-          setInput("");
-          return;
-        }
-      }
-    } else {
-      newMessages = [...messages, { role: "user", content: input }];
-    }
-
+    // Treat unknown input as a general prompt
+    const newMessages = [...messages, { role: "user", content: trimmedInput }];
     setMessages(newMessages);
     setThinking(true);
     setInput("");
     const start = Date.now();
     const apiUrl = config.apiBaseUrl || "http://localhost:1234/v1";
     const apiKey = config.apiKey || "sk-local";
-
     try {
       const res = await fetch(`${apiUrl}/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+          ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
         },
         body: JSON.stringify({
           model,
           messages: newMessages,
           temperature: 0.2,
+          max_tokens: 3000,
           stream: false,
         }),
       });
@@ -454,10 +379,11 @@ export const CodexChat: React.FC<CodexChatProps> = ({ initialPrompt, model, pred
       const history = JSON.parse(fs.readFileSync(historyFilePath, "utf-8"));
       history.push({ prompt: trimmedInput, response: assistantReply });
       fs.writeFileSync(historyFilePath, JSON.stringify(history, null, 2));
+      return;
     } catch (error) {
       setThinking(false);
-      console.error("🚨 Error:", error);
       setResponse("❌ Failed to get response from LMStudio. Check if LMStudio is running and reachable.");
+      return;
     }
   };
 
@@ -467,46 +393,56 @@ export const CodexChat: React.FC<CodexChatProps> = ({ initialPrompt, model, pred
         <Text color="cyanBright">🚀 CodeAssist CLI (by Ravi)</Text>
         <Text color="green">Built with ❤️ LMStudio + Qwen2.5</Text>
       </Box>
+
       <Box marginBottom={1} flexDirection="column" borderStyle="classic" borderColor="yellow" width="80%" padding={1} alignSelf="center">
         <Text>📦 Default Repo: {config?.defaultRepo || "N/A"}</Text>
+        <Text color="cyan">📁 Active Repo: {currentRepoPath}</Text>
         <Text>🛠️ Model: {model}</Text>
         <Text>📂 Path: {config?.defaultPath || "N/A"}</Text>
       </Box>
-      {Array.isArray(predefinedPrompts) && predefinedPrompts.length > 0 && (
-        <Box marginBottom={1} flexDirection="column" borderStyle="classic" borderColor="magenta" width="80%" padding={1} alignSelf="center">
-          <Text color="magentaBright">🧠 Predefined Prompts:</Text>
-          {predefinedPrompts.map((prompt, idx) => (
-            <Text key={idx} color="yellow">- {prompt}</Text>
-          ))}
-        </Box>
-      )}
+
+      <Box marginBottom={1} flexDirection="column" borderStyle="classic" borderColor="magenta" width="80%" padding={1} alignSelf="center">
+        <Text color="magentaBright">🧠 Predefined Prompts:</Text>
+        {Object.entries(promptCatalog).map(([cmd], idx) => (
+          <Text key={idx} color="yellow">- /{cmd}</Text>
+        ))}
+      </Box>
+
       {response && (
-        <Box marginBottom={1} flexDirection="column" borderStyle="round" borderColor="green" width="80%" paddingX={1} alignSelf="center">
+        <Box marginBottom={1} flexDirection="column" borderStyle="round" borderColor="green" width="80%" paddingX={1} alignSelf="center" >
           <Text color="magentaBright">💬 Assistant Response:</Text>
-          <Text>{response}</Text>
+          {lastCommand === "architecture" && response.includes("graph TD") ? (
+            <Text color="white">📊 Mermaid Output Detected (render externally):</Text>
+          ) : null}
+          <Text>{highlightGherkin(response)}</Text>
           {tokensUsed !== null && <Text color="cyan">Tokens: {tokensUsed} | Time: {timeTaken}s</Text>}
         </Box>
       )}
+
       {!thinking && (
         <Box flexDirection="column" width="80%" alignSelf="center" marginTop={1}>
           <Box borderStyle="round" borderColor="blue" paddingX={1}>
-            <TextInput value={input} onChange={setInput} onSubmit={handleSubmit} placeholder="Type your question here" focus />
+            <TextInput
+              value={input}
+              onChange={setInput}
+              onSubmit={handleSubmit}
+              placeholder="Type your question here"
+              focus
+            />
           </Box>
-          {suggestions.length > 0 && (
-            <Box flexDirection="column" paddingLeft={2}>
-              <Text color="gray">Suggestions:</Text>
-              {suggestions.map((file, i) => (
-                <Text key={i} color="blue">{file}</Text>
-              ))}
-            </Box>
-          )}
           <Box marginTop={1}>
-            <Text>Press <Text color="green">Enter</Text> to send | <Text color="red">/repo</Text>, <Text color="red">/history</Text>, <Text color="red">/load</Text>, <Text color="red">/clear</Text>, <Text color="red">/clear-history</Text></Text>
+            <Text>
+              Press <Text color="green">Enter</Text> to send | <Text color="red">/repo</Text>, <Text color="red">/history</Text>, <Text color="red">/load</Text>, <Text color="red">/clear</Text>, <Text color="red">/clear-history</Text>
+            </Text>
           </Box>
         </Box>
       )}
-      {thinking && <Box marginTop={1}><Text color="green"><Spinner type="dots" /> Thinking...</Text></Box>}
+
+      {thinking && (
+        <Box marginTop={1}>
+          <Text color="green"><Spinner type="dots" /> Thinking...</Text>
+        </Box>
+      )}
     </Box>
   );
 };
-
