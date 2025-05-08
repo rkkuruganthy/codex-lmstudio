@@ -8,7 +8,11 @@
 ├── build.mjs
 ├── codex
 ├── codex-config.json
+├── current_FS.txt
 ├── currentoutput.txt
+├── dist
+│   ├── cli.mjs
+│   └── cli.mjs.map
 ├── Dockerfile
 ├── examples
 │   ├── build-codex-demo
@@ -47,6 +51,7 @@
 │   ├── prompting_guide.md
 │   └── README.md
 ├── folderstructure.txt
+├── history-cache.json
 ├── HUSKY.md
 ├── ignore-react-devtools-plugin.js
 ├── node_modules
@@ -10320,6 +10325,23 @@
 │   │   ├── license
 │   │   ├── package.json
 │   │   └── readme.md
+│   ├── ink-select-input
+│   │   ├── build
+│   │   │   ├── index.d.ts
+│   │   │   ├── index.js
+│   │   │   ├── index.js.map
+│   │   │   ├── Indicator.d.ts
+│   │   │   ├── Indicator.js
+│   │   │   ├── Indicator.js.map
+│   │   │   ├── Item.d.ts
+│   │   │   ├── Item.js
+│   │   │   ├── Item.js.map
+│   │   │   ├── SelectInput.d.ts
+│   │   │   ├── SelectInput.js
+│   │   │   └── SelectInput.js.map
+│   │   ├── license
+│   │   ├── package.json
+│   │   └── readme.md
 │   ├── ink-spinner
 │   │   ├── build
 │   │   │   ├── index.d.ts
@@ -11114,6 +11136,12 @@
 │   │   │   ├── cast.js
 │   │   │   ├── index.js
 │   │   │   └── parse-string.js
+│   │   ├── LICENSE
+│   │   ├── package.json
+│   │   └── README.md
+│   ├── lmstudio
+│   │   ├── dist
+│   │   │   └── index.js
 │   │   ├── LICENSE
 │   │   ├── package.json
 │   │   └── README.md
@@ -15086,10 +15114,10 @@
 │   │   │   ├── node
 │   │   │   │   ├── chunks
 │   │   │   │   │   ├── dep-3RmXg9uo.js
-│   │   │   │   │   ├── dep-BMIURPaQ.js
-│   │   │   │   │   ├── dep-CixbwhWq.js
+│   │   │   │   │   ├── dep-Bn81Esdm.js
 │   │   │   │   │   ├── dep-CvfTChi5.js
-│   │   │   │   │   └── dep-DD7x-aKn.js
+│   │   │   │   │   ├── dep-D5ITTxnT.js
+│   │   │   │   │   └── dep-SOJpRpBL.js
 │   │   │   │   ├── cli.js
 │   │   │   │   ├── constants.js
 │   │   │   │   ├── index.d.ts
@@ -15776,6 +15804,9 @@
 ├── package-lock.json
 ├── package-old.json
 ├── package.json
+├── Plan
+│   ├── CodeAssist_CLI_Roadmap_Updated.md
+│   └── CodeAssist_CLI_Roadmap.md
 ├── README.md
 ├── require-shim.js
 ├── scripts
@@ -15821,7 +15852,7 @@
 │   │   ├── model-utils.ts
 │   │   └── singlepass-cli-app.tsx
 │   ├── cli-lmstudio.tsx
-│   ├── cli.ts
+│   ├── cli.tsx
 │   ├── components
 │   │   ├── approval-mode-overlay.tsx
 │   │   ├── banner.tsx
@@ -15852,6 +15883,8 @@
 │   │       │   └── use-select.js
 │   │       ├── ink-spinner.tsx
 │   │       └── ink-text-input.tsx
+│   ├── components-del
+│   │   └── codex-chat-del.tsx
 │   ├── dist
 │   │   ├── cli.js
 │   │   └── cli.js.map
@@ -15860,6 +15893,9 @@
 │   │   ├── use-confirmation.ts
 │   │   └── use-terminal-size.ts
 │   ├── parse-apply-patch.ts
+│   ├── prompts
+│   │   ├── promptCatalog-old.ts
+│   │   └── promptCatalog.ts
 │   ├── shims-external.d.ts
 │   ├── text-buffer.ts
 │   ├── typings.d.ts
@@ -15950,6 +15986,9 @@
 │       ├── terminal-chat-utils.ts
 │       └── terminal.ts
 ├── tests
+│   ├── codexchat.smoketest.ts
+│   └── smoke-test.cjs
+├── tests-old
 │   ├── __fixtures__
 │   │   ├── a.txt
 │   │   └── b.txt
@@ -16025,4 +16064,4 @@
 ├── tsconfig.json
 └── vite.config.ts
 
-1440 directories, 14586 files
+1449 directories, 14616 files

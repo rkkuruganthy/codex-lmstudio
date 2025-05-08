@@ -1,7 +1,7 @@
 // src/components/codex-chat.tsx
 
 import React, { useState, useEffect } from "react";
-import { Box, Text } from "ink";
+import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
 import Spinner from "ink-spinner";
 import fetch from "node-fetch";
@@ -113,35 +113,96 @@ export const CodexChat: React.FC<CodexChatProps> = ({ initialPrompt, model, conf
   const [response, setResponse] = useState("");
   const [tokensUsed, setTokensUsed] = useState<number | null>(null);
   const [timeTaken, setTimeTaken] = useState<number | null>(null);
-  const [repoFiles, setRepoFiles] = useState<string[]>(() => {
-    try {
-      const cached = fs.readFileSync(".repo-cache.json", "utf-8");
-      const { paths } = JSON.parse(cached);
-      return paths || [];
-    } catch {
-      return [];
-    }
-  });
+  const [repoFiles, setRepoFiles] = useState<string[]>([]);
   const [lastCommand, setLastCommand] = useState<string | null>(null);
   const [currentRepoPath, setCurrentRepoPath] = useState(config.defaultRepo);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<number>(0);
+  const [suggestionMode, setSuggestionMode] = useState(false);
   const historyFilePath = getHistoryFilePath();
 
+  // Load repo files for suggestions when repo changes
+  useEffect(() => {
+    try {
+      const contextFile = path.join(currentRepoPath, ".repo-context.json");
+      if (fs.existsSync(contextFile)) {
+        const contextData = JSON.parse(fs.readFileSync(contextFile, "utf-8"));
+        setRepoFiles(contextData.map((f: any) => f.path));
+      } else {
+        setRepoFiles([]);
+      }
+    } catch {
+      setRepoFiles([]);
+    }
+  }, [currentRepoPath]);
+
   useEffect(() => { ensureHistoryFileExists(historyFilePath); }, []);
+
+  // Update suggestions as user types a file argument
   useEffect(() => {
     const parts = input.trim().split(" ");
     if (parts.length >= 2 && Object.keys(promptCatalog).includes(parts[0].replace("/", ""))) {
       const partial = parts.slice(1).join(" ").toLowerCase();
       const filtered = repoFiles.filter(f => f.toLowerCase().includes(partial));
-      setSuggestions(filtered.slice(0, 5));
+      setSuggestions(filtered.slice(0, 8));
+      setSelectedSuggestion(0);
     } else {
       setSuggestions([]);
+      setSelectedSuggestion(0);
     }
   }, [input, repoFiles]);
+
+  // Keyboard navigation for suggestions
+  useInput((inputKey, key) => {
+    if (suggestions.length > 0) {
+      setSuggestionMode(true);
+      if (key.downArrow) {
+        setSelectedSuggestion(prev => (prev + 1) % suggestions.length);
+      } else if (key.upArrow) {
+        setSelectedSuggestion(prev => (prev - 1 + suggestions.length) % suggestions.length);
+      } else if (key.return || key.tab) {
+        // Autocomplete with selected suggestion
+        const parts = input.trim().split(" ");
+        if (parts.length >= 2) {
+          setInput(parts[0] + " " + suggestions[selectedSuggestion]);
+          setSuggestions([]);
+          setSuggestionMode(false);
+        }
+      } else if (key.escape) {
+        setSuggestions([]);
+        setSuggestionMode(false);
+      }
+    } else {
+      setSuggestionMode(false);
+    }
+  });
+
+  // Clear input and suggestions after LLM response
+  useEffect(() => {
+    if (!thinking && response) {
+      setInput("");
+      setSuggestions([]);
+      setSelectedSuggestion(0);
+      setSuggestionMode(false);
+    }
+  }, [thinking, response]);
 
   const handleSubmit = async () => {
     const trimmedInput = input.trim();
     if (!trimmedInput) return;
+
+    // --- /clear command fix ---
+    if (trimmedInput === "/clear") {
+      setMessages([{ role: "system", content: "You are a helpful coding assistant." }]);
+      setResponse("");
+      setInput("");
+      setTokensUsed(null);
+      setTimeTaken(null);
+      setSuggestions([]);
+      setSelectedSuggestion(0);
+      setSuggestionMode(false);
+      return;
+    }
 
     const [rawCommand, ...argParts] = trimmedInput.split(" ");
     const commandKey = rawCommand.replace("/", "");
@@ -189,7 +250,6 @@ export const CodexChat: React.FC<CodexChatProps> = ({ initialPrompt, model, conf
       }
       const contextData = JSON.parse(fs.readFileSync(contextFile, "utf-8"));
 
-      // --- Enhanced Filtering ---
       const filteredContext = contextData.filter((f: any) => {
         return (
           !f.path.startsWith(".") &&
@@ -199,7 +259,6 @@ export const CodexChat: React.FC<CodexChatProps> = ({ initialPrompt, model, conf
         );
       });
 
-      // --- Business Flows and Summarize Use Full Context, Others Use Filtered ---
       let fileContent = "";
       const MAX_FILES = 7;
       const MAX_LENGTH = 2000;
@@ -225,7 +284,6 @@ export const CodexChat: React.FC<CodexChatProps> = ({ initialPrompt, model, conf
         }
       }
 
-      // Compose final prompt
       const finalPrompt = promptEntry.template
         .replace("<INSERT_FILE_NAME_AND_CONTENT_HERE>", fileContent)
         .replace("<INSERT_REPO_STRUCTURE_AND_SAMPLE_CONTENT_HERE>", fileContent);
@@ -284,15 +342,7 @@ export const CodexChat: React.FC<CodexChatProps> = ({ initialPrompt, model, conf
       }
     }
 
-    // Handle special /clear, /clear-history, and /history commands
-    if (trimmedInput === "/clear") {
-      setMessages([{ role: "system", content: "You are a helpful coding assistant." }]);
-      setResponse("");
-      setInput("");
-      setTokensUsed(null);
-      setTimeTaken(null);
-      return;
-    }
+    // Handle special /clear-history, and /history commands (unchanged)
     if (trimmedInput === "/clear-history") {
       try {
         fs.writeFileSync(historyFilePath, JSON.stringify([], null, 2));
@@ -388,28 +438,32 @@ export const CodexChat: React.FC<CodexChatProps> = ({ initialPrompt, model, conf
   };
 
   return (
-    <Box flexDirection="column" padding={1} width="80%">
-      <Box marginBottom={1} flexDirection="column" borderStyle="round" borderColor="cyan" width="80%" alignSelf="center">
+    <Box flexDirection="column" padding={1}>
+      {/* Header */}
+      <Box marginBottom={1} flexDirection="column" borderStyle="single" borderColor="cyan" width={90} alignSelf="center">
         <Text color="cyanBright">🚀 CodeAssist CLI (by Ravi)</Text>
         <Text color="green">Built with ❤️ LMStudio + Qwen2.5</Text>
       </Box>
 
-      <Box marginBottom={1} flexDirection="column" borderStyle="classic" borderColor="yellow" width="80%" padding={1} alignSelf="center">
+      {/* Repo Info */}
+      <Box marginBottom={1} flexDirection="column" borderStyle="single" borderColor="yellow" width={90} alignSelf="center" padding={1}>
         <Text>📦 Default Repo: {config?.defaultRepo || "N/A"}</Text>
         <Text color="cyan">📁 Active Repo: {currentRepoPath}</Text>
         <Text>🛠️ Model: {model}</Text>
         <Text>📂 Path: {config?.defaultPath || "N/A"}</Text>
       </Box>
 
-      <Box marginBottom={1} flexDirection="column" borderStyle="classic" borderColor="magenta" width="80%" padding={1} alignSelf="center">
+      {/* Predefined Prompts */}
+      <Box marginBottom={1} flexDirection="column" borderStyle="single" borderColor="magenta" width={90} alignSelf="center" padding={1}>
         <Text color="magentaBright">🧠 Predefined Prompts:</Text>
         {Object.entries(promptCatalog).map(([cmd], idx) => (
           <Text key={idx} color="yellow">- /{cmd}</Text>
         ))}
       </Box>
 
+      {/* Assistant Response */}
       {response && (
-        <Box marginBottom={1} flexDirection="column" borderStyle="round" borderColor="green" width="80%" paddingX={1} alignSelf="center" >
+        <Box marginBottom={1} flexDirection="column" borderStyle="single" borderColor="green" width={90} alignSelf="center" paddingX={1}>
           <Text color="magentaBright">💬 Assistant Response:</Text>
           {lastCommand === "architecture" && response.includes("graph TD") ? (
             <Text color="white">📊 Mermaid Output Detected (render externally):</Text>
@@ -419,17 +473,32 @@ export const CodexChat: React.FC<CodexChatProps> = ({ initialPrompt, model, conf
         </Box>
       )}
 
+      {/* Input and Suggestions */}
       {!thinking && (
-        <Box flexDirection="column" width="80%" alignSelf="center" marginTop={1}>
-          <Box borderStyle="round" borderColor="blue" paddingX={1}>
+        <Box flexDirection="column" width={90} alignSelf="center" marginTop={1}>
+          <Box borderStyle="single" borderColor="blue" paddingX={1}>
             <TextInput
               value={input}
               onChange={setInput}
               onSubmit={handleSubmit}
               placeholder="Type your question here"
-              focus
+              focus={!suggestionMode}
             />
           </Box>
+          {suggestions.length > 0 && (
+            <Box flexDirection="column" marginTop={1} borderStyle="single" borderColor="gray" width={90} paddingLeft={2}>
+              <Text color="white">Suggestions (use ↑/↓ and Enter/Tab):</Text>
+              {suggestions.map((file, idx) => (
+                <Text
+                  key={file}
+                  color={idx === selectedSuggestion ? "black" : "cyan"}
+                  backgroundColor={idx === selectedSuggestion ? "cyan" : undefined}
+                >
+                  {file}
+                </Text>
+              ))}
+            </Box>
+          )}
           <Box marginTop={1}>
             <Text>
               Press <Text color="green">Enter</Text> to send | <Text color="red">/repo</Text>, <Text color="red">/history</Text>, <Text color="red">/load</Text>, <Text color="red">/clear</Text>, <Text color="red">/clear-history</Text>

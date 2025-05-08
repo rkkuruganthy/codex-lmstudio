@@ -1,7 +1,7 @@
 const { spawn } = require('child_process');
 
 const commands = [
-  '/repo ./test-repo', // Make sure you have a small test repo available
+  '/repo ./tests', // Make sure you have a small test repo available
   '/gherkin',
   '/review',
   '/optimize',
@@ -17,7 +17,9 @@ const commands = [
 ];
 
 function runSmokeTest() {
-  const cli = spawn('node', ['src/index.js'], { stdio: ['pipe', 'pipe', 'pipe'] }); // Adjust entry point as needed
+  //const cli = spawn('node', ['src/index.js'], { stdio: ['pipe', 'pipe', 'pipe'] }); // Adjust entry point as needed
+  const cli = spawn('node', ['dist/cli.mjs'], { stdio: ['pipe', 'pipe', 'pipe'] });
+
 
   let current = 0;
   let buffer = '';

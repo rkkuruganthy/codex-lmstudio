@@ -6771,7 +6771,7 @@ import { render } from "ink";
 // src/components/codex-chat.tsx
 init_require_shim();
 import { useState as useState3, useEffect as useEffect3 } from "react";
-import { Box, Text as Text3 } from "ink";
+import { Box, Text as Text3, useInput as useInput2 } from "ink";
 
 // node_modules/ink-text-input/build/index.js
 init_require_shim();
@@ -8419,19 +8419,26 @@ var CodexChat = ({ initialPrompt, model, config }) => {
   const [response, setResponse] = useState3("");
   const [tokensUsed, setTokensUsed] = useState3(null);
   const [timeTaken, setTimeTaken] = useState3(null);
-  const [repoFiles, setRepoFiles] = useState3(() => {
-    try {
-      const cached = fs3.readFileSync(".repo-cache.json", "utf-8");
-      const { paths } = JSON.parse(cached);
-      return paths || [];
-    } catch {
-      return [];
-    }
-  });
+  const [repoFiles, setRepoFiles] = useState3([]);
   const [lastCommand, setLastCommand] = useState3(null);
   const [currentRepoPath, setCurrentRepoPath] = useState3(config.defaultRepo);
   const [suggestions, setSuggestions] = useState3([]);
+  const [selectedSuggestion, setSelectedSuggestion] = useState3(0);
+  const [suggestionMode, setSuggestionMode] = useState3(false);
   const historyFilePath = getHistoryFilePath();
+  useEffect3(() => {
+    try {
+      const contextFile = path2.join(currentRepoPath, ".repo-context.json");
+      if (fs3.existsSync(contextFile)) {
+        const contextData = JSON.parse(fs3.readFileSync(contextFile, "utf-8"));
+        setRepoFiles(contextData.map((f3) => f3.path));
+      } else {
+        setRepoFiles([]);
+      }
+    } catch {
+      setRepoFiles([]);
+    }
+  }, [currentRepoPath]);
   useEffect3(() => {
     ensureHistoryFileExists(historyFilePath);
   }, []);
@@ -8440,14 +8447,57 @@ var CodexChat = ({ initialPrompt, model, config }) => {
     if (parts.length >= 2 && Object.keys(promptCatalog).includes(parts[0].replace("/", ""))) {
       const partial = parts.slice(1).join(" ").toLowerCase();
       const filtered = repoFiles.filter((f3) => f3.toLowerCase().includes(partial));
-      setSuggestions(filtered.slice(0, 5));
+      setSuggestions(filtered.slice(0, 8));
+      setSelectedSuggestion(0);
     } else {
       setSuggestions([]);
+      setSelectedSuggestion(0);
     }
   }, [input, repoFiles]);
+  useInput2((inputKey, key) => {
+    if (suggestions.length > 0) {
+      setSuggestionMode(true);
+      if (key.downArrow) {
+        setSelectedSuggestion((prev) => (prev + 1) % suggestions.length);
+      } else if (key.upArrow) {
+        setSelectedSuggestion((prev) => (prev - 1 + suggestions.length) % suggestions.length);
+      } else if (key.return || key.tab) {
+        const parts = input.trim().split(" ");
+        if (parts.length >= 2) {
+          setInput(parts[0] + " " + suggestions[selectedSuggestion]);
+          setSuggestions([]);
+          setSuggestionMode(false);
+        }
+      } else if (key.escape) {
+        setSuggestions([]);
+        setSuggestionMode(false);
+      }
+    } else {
+      setSuggestionMode(false);
+    }
+  });
+  useEffect3(() => {
+    if (!thinking && response) {
+      setInput("");
+      setSuggestions([]);
+      setSelectedSuggestion(0);
+      setSuggestionMode(false);
+    }
+  }, [thinking, response]);
   const handleSubmit = async () => {
     const trimmedInput = input.trim();
     if (!trimmedInput) return;
+    if (trimmedInput === "/clear") {
+      setMessages([{ role: "system", content: "You are a helpful coding assistant." }]);
+      setResponse("");
+      setInput("");
+      setTokensUsed(null);
+      setTimeTaken(null);
+      setSuggestions([]);
+      setSelectedSuggestion(0);
+      setSuggestionMode(false);
+      return;
+    }
     const [rawCommand, ...argParts] = trimmedInput.split(" ");
     const commandKey = rawCommand.replace("/", "");
     const arg = argParts.join(" ").trim();
@@ -8565,14 +8615,6 @@ ${match.content.slice(0, MAX_LENGTH)}`;
         return;
       }
     }
-    if (trimmedInput === "/clear") {
-      setMessages([{ role: "system", content: "You are a helpful coding assistant." }]);
-      setResponse("");
-      setInput("");
-      setTokensUsed(null);
-      setTimeTaken(null);
-      return;
-    }
     if (trimmedInput === "/clear-history") {
       try {
         fs3.writeFileSync(historyFilePath, JSON.stringify([], null, 2));
@@ -8661,12 +8703,12 @@ ${formatted}`);
       return;
     }
   };
-  return /* @__PURE__ */ jsxs(Box, { flexDirection: "column", padding: 1, width: "80%", children: [
-    /* @__PURE__ */ jsxs(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "round", borderColor: "cyan", width: "80%", alignSelf: "center", children: [
+  return /* @__PURE__ */ jsxs(Box, { flexDirection: "column", padding: 1, children: [
+    /* @__PURE__ */ jsxs(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "single", borderColor: "cyan", width: 90, alignSelf: "center", children: [
       /* @__PURE__ */ jsx(Text3, { color: "cyanBright", children: "\u{1F680} CodeAssist CLI (by Ravi)" }),
       /* @__PURE__ */ jsx(Text3, { color: "green", children: "Built with \u2764\uFE0F LMStudio + Qwen2.5" })
     ] }),
-    /* @__PURE__ */ jsxs(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "classic", borderColor: "yellow", width: "80%", padding: 1, alignSelf: "center", children: [
+    /* @__PURE__ */ jsxs(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "single", borderColor: "yellow", width: 90, alignSelf: "center", padding: 1, children: [
       /* @__PURE__ */ jsxs(Text3, { children: [
         "\u{1F4E6} Default Repo: ",
         config?.defaultRepo || "N/A"
@@ -8684,14 +8726,14 @@ ${formatted}`);
         config?.defaultPath || "N/A"
       ] })
     ] }),
-    /* @__PURE__ */ jsxs(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "classic", borderColor: "magenta", width: "80%", padding: 1, alignSelf: "center", children: [
+    /* @__PURE__ */ jsxs(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "single", borderColor: "magenta", width: 90, alignSelf: "center", padding: 1, children: [
       /* @__PURE__ */ jsx(Text3, { color: "magentaBright", children: "\u{1F9E0} Predefined Prompts:" }),
       Object.entries(promptCatalog).map(([cmd], idx) => /* @__PURE__ */ jsxs(Text3, { color: "yellow", children: [
         "- /",
         cmd
       ] }, idx))
     ] }),
-    response && /* @__PURE__ */ jsxs(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "round", borderColor: "green", width: "80%", paddingX: 1, alignSelf: "center", children: [
+    response && /* @__PURE__ */ jsxs(Box, { marginBottom: 1, flexDirection: "column", borderStyle: "single", borderColor: "green", width: 90, alignSelf: "center", paddingX: 1, children: [
       /* @__PURE__ */ jsx(Text3, { color: "magentaBright", children: "\u{1F4AC} Assistant Response:" }),
       lastCommand === "architecture" && response.includes("graph TD") ? /* @__PURE__ */ jsx(Text3, { color: "white", children: "\u{1F4CA} Mermaid Output Detected (render externally):" }) : null,
       /* @__PURE__ */ jsx(Text3, { children: highlightGherkin(response) }),
@@ -8703,17 +8745,29 @@ ${formatted}`);
         "s"
       ] })
     ] }),
-    !thinking && /* @__PURE__ */ jsxs(Box, { flexDirection: "column", width: "80%", alignSelf: "center", marginTop: 1, children: [
-      /* @__PURE__ */ jsx(Box, { borderStyle: "round", borderColor: "blue", paddingX: 1, children: /* @__PURE__ */ jsx(
+    !thinking && /* @__PURE__ */ jsxs(Box, { flexDirection: "column", width: 90, alignSelf: "center", marginTop: 1, children: [
+      /* @__PURE__ */ jsx(Box, { borderStyle: "single", borderColor: "blue", paddingX: 1, children: /* @__PURE__ */ jsx(
         build_default,
         {
           value: input,
           onChange: setInput,
           onSubmit: handleSubmit,
           placeholder: "Type your question here",
-          focus: true
+          focus: !suggestionMode
         }
       ) }),
+      suggestions.length > 0 && /* @__PURE__ */ jsxs(Box, { flexDirection: "column", marginTop: 1, borderStyle: "single", borderColor: "gray", width: 90, paddingLeft: 2, children: [
+        /* @__PURE__ */ jsx(Text3, { color: "white", children: "Suggestions (use \u2191/\u2193 and Enter/Tab):" }),
+        suggestions.map((file, idx) => /* @__PURE__ */ jsx(
+          Text3,
+          {
+            color: idx === selectedSuggestion ? "black" : "cyan",
+            backgroundColor: idx === selectedSuggestion ? "cyan" : void 0,
+            children: file
+          },
+          file
+        ))
+      ] }),
       /* @__PURE__ */ jsx(Box, { marginTop: 1, children: /* @__PURE__ */ jsxs(Text3, { children: [
         "Press ",
         /* @__PURE__ */ jsx(Text3, { color: "green", children: "Enter" }),
